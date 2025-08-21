@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poetry Slam Punktesummen-Rechner</title>
+    <meta name="description" content="Punktesummen-Rechner für Poetry Slam Wettbewerbe">
+    <meta name="theme-color" content="#0d6efd">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=1.2">
+</head>
+<body>
+    <div class="container-fluid">
+        <header class="text-center py-3">
+            <h1 class="h2 fw-bold text-primary mb-1">🎭 Poetry Slam Rechner</h1>
+            <p class="small text-muted mb-0">Punktesummen-Rechner für Poetry Slam Wettbewerbe</p>
+        </header>
+
+        <div class="row g-3">
+            <!-- Hauptbereich -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Punkteeingabe</h6>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="addJudge" title="Juror*in hinzufügen">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="removeJudge" title="Juror*in entfernen">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body py-3">
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <label for="participantName" class="form-label small">
+                                    <i class="bi bi-person"></i> Name des Teilnehmers (optional)
+                                </label>
+                                <input type="text" class="form-control form-control-sm" id="participantName" placeholder="Name eingeben..." data-next="judge1">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">
+                                    <i class="bi bi-people"></i> Anzahl Juror*innen: 
+                                    <span id="judgeCount">5</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="judgeInputs" class="row g-2">
+                            <!-- Juror-Inputs werden hier dynamisch generiert -->
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end mt-3">
+                            <button type="button" class="btn btn-primary" id="calculateBtn">
+                                <i class="bi bi-calculator"></i> Berechnen
+                            </button>
+                            <button type="button" class="btn btn-success" id="resetBtn">
+                                <i class="bi bi-check-circle"></i> Speichern & Reset
+                            </button>
+                        </div>
+                        
+                        <!-- Progress indicator -->
+                        <div class="progress mt-3" style="height: 4px; display: none;" id="progressBar">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ergebnisbereich -->
+                <div class="card shadow-sm mt-3" id="resultCard" style="display: none;">
+                    <div class="card-header py-2">
+                        <h6 class="mb-0">Ergebnis</h6>
+                    </div>
+                    <div class="card-body py-3">
+                        <div class="row align-items-center">
+                            <div class="col-12">
+                                <div class="text-center">
+                                    <div class="result-icon mb-2">
+                                        <i class="bi bi-trophy-fill text-warning fs-1"></i>
+                                    </div>
+                                    <h4 class="text-success mb-2">Gesamtpunktzahl</h4>
+                                    <div class="total-score-display">
+                                        <span id="totalScore" class="badge bg-success fs-2 px-4 py-2">0,0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <div class="score-section">
+                                    <div class="score-header text-danger">
+                                        <i class="bi bi-x-circle"></i>
+                                        <small class="fw-bold">Gestrichene Punkte</small>
+                                    </div>
+                                    <div id="excludedScores" class="score-badges mt-2"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="score-section">
+                                    <div class="score-header text-success">
+                                        <i class="bi bi-check-circle"></i>
+                                        <small class="fw-bold">Gewertete Punkte</small>
+                                    </div>
+                                    <div id="includedScores" class="score-badges mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar mit History -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">History</h6>
+                            <div class="d-flex flex-row gap-1">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="viewToggle" title="Ansicht wechseln">
+                                    <i class="bi bi-list-ul" id="viewIcon"></i>
+                                </button>
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="Export">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><button class="dropdown-item" id="exportCSV">
+                                            <i class="bi bi-file-earmark-text"></i> CSV Export
+                                        </button></li>
+                                        <li><button class="dropdown-item" id="exportJSON">
+                                            <i class="bi bi-file-earmark-code"></i> JSON Export
+                                        </button></li>
+                                    </ul>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="clearHistory" title="History löschen">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body py-2">
+                        <!-- List View -->
+                        <div id="historyList" class="history-container">
+                            <!-- History-Einträge werden hier dynamisch generiert -->
+                        </div>
+                        
+                        <!-- Table View -->
+                        <div id="historyTable" class="history-table-container" style="display: none;">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th scope="col">Datum</th>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Punkte</th>
+                                            <th scope="col">Aktion</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTableBody">
+                                        <!-- Table rows werden hier dynamisch generiert -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div id="noHistory" class="text-center text-muted py-3">
+                            <i class="bi bi-clock-history fs-3"></i>
+                            <p class="small mt-2 mb-0">Noch keine Ergebnisse gespeichert</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer mit Theme-Toggle -->
+        <footer class="text-center py-2 mt-3">
+            <button type="button" class="btn btn-link btn-sm text-muted p-1" id="toggleTheme" title="Theme wechseln">
+                <span id="themeIcon">🌙</span>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Toast für Benachrichtigungen -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notificationToast" class="toast" role="alert">
+            <div class="toast-header">
+                <strong class="me-auto">Benachrichtigung</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js?v=1.2"></script>
+</body>
+</html>
