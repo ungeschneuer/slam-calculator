@@ -129,7 +129,7 @@ export default defineConfig({
       },
       manifest: {
         name: 'Poetry Slam Punktesummen-Rechner',
-        short_name: 'Slam Calculator',
+        short_name: 'Slam Rechner',
         description: 'Professioneller Punktesummen-Rechner für Poetry Slam Wettbewerbe',
         theme_color: '#0d6efd',
         background_color: '#ffffff',
