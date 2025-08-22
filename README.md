@@ -1,6 +1,6 @@
 # 🎭 Poetry Slam Punktesummen-Rechner
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/marcel-schneuer/slam-calculator)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/ungeschneuer/slam-calculator)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PWA](https://img.shields.io/badge/PWA-enabled-purple.svg)](https://web.dev/progressive-web-apps/)
 
@@ -45,7 +45,7 @@ Die App ist vollständig lokal installiert und benötigt keine externen CDN-Abh�
 
 ```bash
 # Repository klonen
-git clone https://github.com/marcel-schneuer/slam-calculator.git
+git clone https://github.com/ungeschneuer/slam-calculator.git
 cd slam-calculator
 
 # Lokale Dateien sind bereits vorhanden:
@@ -131,7 +131,7 @@ slam-calculator/
 ### **Setup für lokale Entwicklung**
 ```bash
 # Repository klonen
-git clone https://github.com/marcel-schneuer/slam-calculator.git
+git clone https://github.com/ungeschneuer/slam-calculator.git
 cd slam-calculator
 
 # Dependencies installieren
@@ -271,28 +271,7 @@ Das System verwendet mehrstufiges Error-Handling:
 3. **User-Feedback**: Benutzerfreundliche Fehlermeldungen
 4. **Graceful Degradation**: Funktionalität bleibt bei Teilfehlern erhalten
 
-## 🎯 Zukünftige Verbesserungen
-
-### **Geplante Features**
-- **Cloud-Synchronisation**: Server-basierte Datenspeicherung
-- **Event-Management**: Mehrere Events verwalten
-- **Erweiterte Statistiken**: Detaillierte Analysen
-- **Mehrsprachigkeit**: Internationale Unterstützung
-
-### **Technische Verbesserungen**
-- **TypeScript**: Für bessere Code-Qualität
-- **Testing**: Unit und E2E Tests
-- **Build-Process**: Webpack/Vite Integration
-- **CI/CD**: Automatisierte Deployments
-
 ## 📄 Lizenz
 
 Dieses Projekt steht unter der MIT-Lizenz.
 
-## 🤝 Beitragen
-
-Beiträge sind willkommen! Bitte erstellen Sie einen Pull Request oder öffnen Sie ein Issue.
-
----
-
-**Entwickelt für Poetry Slam Veranstaltungen** 🎭

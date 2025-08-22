@@ -27,17 +27,17 @@
   ],
   "author": {
     "name": "Marcel Schneuer",
-    "url": "https://github.com/marcel-schneuer"
+    "url": "https://github.com/ungeschneuer"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/marcel-schneuer/slam-calculator.git"
+    "url": "https://github.com/ungeschneuer/slam-calculator.git"
   },
   "bugs": {
-    "url": "https://github.com/marcel-schneuer/slam-calculator/issues"
+    "url": "https://github.com/ungeschneuer/slam-calculator/issues"
   },
-  "homepage": "https://marcel-schneuer.github.io/slam-calculator/",
+  "homepage": "https://ungeschneuer.github.io/slam-calculator/",
   "engines": {
     "node": ">=16.0.0"
   },
