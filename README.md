@@ -41,7 +41,7 @@ Die App ist vollständig lokal installiert und benötigt keine externen CDN-Abh�
 
 ```bash
 # Repository klonen
-git clone [repository-url]
+git clone https://github.com/marcel-schneuer/slam-calculator.git
 cd slam-calculator
 
 # Lokale Dateien sind bereits vorhanden:

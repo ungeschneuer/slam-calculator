@@ -6,14 +6,14 @@
     <title>Poetry Slam Punktesummen-Rechner</title>
     <meta name="description" content="Punktesummen-Rechner für Poetry Slam Wettbewerbe">
     <meta name="theme-color" content="#0d6efd">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
     <link href="assets/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=1.2">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div class="container-fluid">
+<body class="d-flex flex-column min-vh-100">
+    <div class="container-fluid flex-grow-1">
         <header class="text-center py-3">
             <h1 class="h2 fw-bold text-primary mb-1">🎭 Poetry Slam Rechner</h1>
             <p class="small text-muted mb-0">Punktesummen-Rechner für Poetry Slam Wettbewerbe</p>
@@ -25,35 +25,75 @@
                 <div class="card shadow-sm">
                     <div class="card-header py-2">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Punkteeingabe</h6>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="addJudge" title="Juror*in hinzufügen">
-                                    <i class="bi bi-plus"></i>
+                            <h6 class="mb-0">Punktetafeln (<span id="judgeCount">5</span>)</h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-danger fw-bold fs-5" id="removeJudge" title="Juror*in entfernen">
+                                    <i class="bi bi-dash-lg"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="removeJudge" title="Juror*in entfernen">
-                                    <i class="bi bi-dash"></i>
+                                <button type="button" class="btn btn-outline-success fw-bold fs-5" id="addJudge" title="Juror*in hinzufügen">
+                                    <i class="bi bi-plus-lg"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
                     <div class="card-body py-3">
                         <div class="row g-2 mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="participantName" class="form-label small">
-                                    <i class="bi bi-person"></i> Name des Teilnehmers (optional)
+                                    <i class="bi bi-person"></i> Name Teilnehmer*in (optional)
                                 </label>
                                 <input type="text" class="form-control form-control-sm" id="participantName" placeholder="Name eingeben..." data-next="judge1">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small">
-                                    <i class="bi bi-people"></i> Anzahl Juror*innen: 
-                                    <span id="judgeCount">5</span>
+            
+                            <div class="col-md-4">
+                                <label for="timerMinutes" class="form-label small">
+                                    <i class="bi bi-clock"></i> Timer (Minuten)
+                                    <i class="bi bi-question-circle text-muted ms-1" 
+                                       data-bs-toggle="tooltip" 
+                                       data-bs-placement="top" 
+                                       title="Timer für Performance-Zeit (0,5-60 Min). Tastenkürzel: T=Start, P=Pause/Fortsetzen, S=Stopp"></i>
                                 </label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control" id="timerMinutes" min="0.5" max="60" value="6" step="0.1">
+                                    <button type="button" class="btn btn-outline-primary" id="startTimer" title="Timer starten (T)">
+                                        <i class="bi bi-play-fill"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
                         <div id="judgeInputs" class="row g-2">
                             <!-- Juror-Inputs werden hier dynamisch generiert -->
+                        </div>
+
+                        <!-- Timer Display -->
+                        <div class="timer-container mt-3" id="timerContainer" style="display: none;">
+                            <div class="card border-primary">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="timer-display">
+                                            <i class="bi bi-clock-fill text-primary me-2"></i>
+                                            <span id="timerDisplay" class="fs-4 fw-bold text-primary">05:00</span>
+                                        </div>
+                                        <div class="timer-controls">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" id="pauseTimer" title="Timer pausieren">
+                                                <i class="bi bi-pause-fill"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-success" id="resumeTimer" title="Timer fortsetzen" style="display: none;">
+                                                <i class="bi bi-play-fill"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" id="stopTimer" title="Timer stoppen">
+                                                <i class="bi bi-stop-fill"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="timer-progress mt-2">
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-primary" id="timerProgress" role="progressbar" style="width: 100%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end mt-3">
@@ -155,7 +195,7 @@
                         <div id="historyTable" class="history-table-container" style="display: none;">
                             <div class="table-responsive">
                                 <table class="table table-sm table-hover">
-                                    <thead class="table-light">
+                                    <thead class="table">
                                         <tr>
                                             <th scope="col">Datum</th>
                                             <th scope="col">Name</th>
@@ -178,13 +218,142 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Footer mit Theme-Toggle -->
-        <footer class="text-center py-2 mt-3">
-            <button type="button" class="btn btn-link btn-sm text-muted p-1" id="toggleTheme" title="Theme wechseln">
-                <span id="themeIcon">🌙</span>
-            </button>
+    <!-- Footer mit Theme-Toggle und Copyright -->
+    <footer class="border-top py-3 mt-auto">
+            <div class="d-flex justify-content-center align-items-center gap-2 flex-nowrap">
+              <button type="button" class="btn btn-link btn-sm text-muted p-1" id="toggleTheme" title="Theme wechseln">
+                <span id="themeIcon">☀️</span>
+              </button>
+            </div>
         </footer>
+          
+    </div>
+
+    <!-- Hilfe Button -->
+    <div class="help-button-container position-fixed bottom-0 end-0 m-3" style="z-index: 1000;">
+        <button type="button" class="btn btn-primary btn-lg rounded-circle shadow" id="helpButton" title="Hilfe anzeigen (H)">
+            <i class="bi bi-question-lg"></i>
+        </button>
+    </div>
+
+    <!-- Hilfe Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">
+                        <i class="bi bi-info-circle text-primary me-2"></i>
+                        Poetry Slam Calculator - Anleitung
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-calculator me-2"></i>
+                                Grundlegende Bedienung
+                            </h6>
+                            <ol class="list-group list-group-numbered list-group-flush mb-4">
+                                <li class="list-group-item">Teilnehmername eingeben (optional)</li>
+                                <li class="list-group-item">Anzahl der Juroren anpassen (3-15)</li>
+                                <li class="list-group-item">Punkte für jeden Juror eingeben (1,0-10,0)</li>
+                                <li class="list-group-item">"Berechnen" klicken</li>
+                                <li class="list-group-item">Ergebnis speichern mit "Speichern & Reset"</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-clock me-2"></i>
+                                Timer-Funktion
+                            </h6>
+                            <ul class="list-group list-group-flush mb-4">
+                                <li class="list-group-item">
+                                    <strong>Zeit einstellen:</strong> 0,5-60 Minuten in 0,5-Schritten
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Start:</strong> Play-Button oder Taste "T"
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Pause/Fortsetzen:</strong> Pause-Button oder Taste "P"
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Stopp:</strong> Stop-Button oder Taste "S"
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-keyboard me-2"></i>
+                                Tastenkürzel
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td><kbd>Ctrl/Cmd + Enter</kbd></td>
+                                            <td>Berechnung starten</td>
+                                        </tr>
+                                        <tr>
+                                            <td><kbd>Ctrl/Cmd + S</kbd></td>
+                                            <td>Ergebnis speichern</td>
+                                        </tr>
+                                        <tr>
+                                            <td><kbd>Ctrl/Cmd + V</kbd></td>
+                                            <td>History-Ansicht wechseln</td>
+                                        </tr>
+                                        <tr>
+                                            <td><kbd>Enter/↓</kbd></td>
+                                            <td>Nächstes Eingabefeld</td>
+                                        </tr>
+                                        <tr>
+                                            <td><kbd>↑</kbd></td>
+                                            <td>Vorheriges Eingabefeld</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-gear me-2"></i>
+                                Weitere Funktionen
+                            </h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong>History:</strong> Alle Ergebnisse werden gespeichert
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Export:</strong> CSV und JSON Export verfügbar
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Dark Mode:</strong> Automatisch oder manuell umschaltbar
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>PWA:</strong> Kann als App installiert werden
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Offline:</strong> Funktioniert ohne Internetverbindung
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="text-muted small me-auto">
+                        <i class="bi bi-code-slash me-1"></i>
+                        Entwickelt von <a href="https://github.com/marcel-schneuer/slam-calculator" target="_blank" class="text-decoration-none">Marcel Schneuer</a>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast für Benachrichtigungen -->
@@ -200,6 +369,6 @@
     </div>
 
     <script src="assets/js/bootstrap.bundle.min.js"></script>
-    <script src="app.js?v=1.2"></script>
+    <script src="app.js"></script>
 </body>
 </html>

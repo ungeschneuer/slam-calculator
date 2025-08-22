@@ -375,6 +375,210 @@ footer .btn-link:focus {
     opacity: 0.8;
 }
 
+/* Timer Styling */
+.timer-container {
+    animation: slideInDown 0.3s ease-out;
+}
+
+.timer-display {
+    display: flex;
+    align-items: center;
+}
+
+.timer-controls {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.timer-controls .btn {
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timer-progress .progress {
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.timer-progress .progress-bar {
+    transition: width 1s linear;
+}
+
+/* Timer Animation States */
+.timer-warning {
+    animation: pulse 1s infinite;
+}
+
+.timer-danger {
+    animation: shake 0.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Timer responsive adjustments */
+@media (max-width: 768px) {
+    .timer-display {
+        font-size: 0.9rem;
+    }
+    
+    .timer-controls .btn {
+        min-width: 28px;
+        min-height: 28px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Help Button Styling */
+.help-button-container {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.help-button-container .btn {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.help-button-container .btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.help-button-container .btn:active {
+    transform: scale(0.95);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Footer Styling */
+footer {
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+footer .d-flex {
+    flex-wrap: nowrap !important;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+footer a {
+    color: var(--text-color);
+    transition: color var(--transition-speed) ease;
+}
+
+footer a:hover {
+    color: var(--primary-color);
+}
+
+/* Mobile Footer adjustments */
+@media (max-width: 576px) {
+    footer .d-flex {
+        font-size: 0.75rem;
+        gap: 0.25rem !important;
+    }
+    
+    footer .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Extra small screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+    footer .d-flex {
+        font-size: 0.7rem;
+        gap: 0.2rem !important;
+    }
+    
+    footer .btn-sm {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.7rem;
+        min-width: auto;
+    }
+    
+    footer .text-muted {
+        font-size: 0.7rem !important;
+    }
+    
+    footer a {
+        font-size: 0.7rem;
+    }
+}
+
+/* Modal Styling */
+.modal-content {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+.modal-body {
+    background: var(--body-bg);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+
+.list-group-item {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.list-group-item strong {
+    color: var(--primary-color);
+}
+
+kbd {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+}
+
 /* History-Styling */
 .history-container {
     max-height: 400px;

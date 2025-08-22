@@ -9,93 +9,168 @@ class PoetrySlamCalculator {
         this.currentView = 'list'; // 'list' oder 'table'
         this.autoSaveTimeout = null;
         this.autoSaveDelay = 2000; // 2 Sekunden
+        this.errorCount = 0;
+        this.maxErrors = 5;
+        this.errorLog = [];
+        
+        // Timer properties
+        this.timerInterval = null;
+        this.timerStartTime = null;
+        this.timerDuration = 0;
+        this.timerRemaining = 0;
+        this.timerPaused = false;
+        this.timerPauseTime = 0;
         
         this.init();
     }
 
     init() {
-        this.loadHistory();
-        this.setupEventListeners();
-        this.setupDarkMode();
-        this.generateJudgeInputs();
-        this.updateJudgeCount();
-        this.loadTheme();
-        this.loadViewPreference();
-        this.registerServiceWorker();
-        this.setupOfflineMonitoring();
+        try {
+            this.loadHistory();
+            this.setupEventListeners();
+            this.setupDarkMode();
+            this.generateJudgeInputs();
+            this.updateJudgeCount();
+            this.loadTheme();
+            this.loadViewPreference();
+            this.registerServiceWorker();
+                    this.setupOfflineMonitoring();
+        this.setupErrorHandling();
+        this.initializeTooltips();
+        } catch (error) {
+            this.handleError('Initialisierung fehlgeschlagen', error);
+        }
     }
 
     setupEventListeners() {
-        // Button Event Listeners
-        document.getElementById('addJudge').addEventListener('click', () => this.addJudge());
-        document.getElementById('removeJudge').addEventListener('click', () => this.removeJudge());
-        document.getElementById('calculateBtn').addEventListener('click', () => this.calculateScore());
-        document.getElementById('resetBtn').addEventListener('click', () => this.saveAndReset());
-        document.getElementById('clearHistory').addEventListener('click', () => this.clearHistory());
-        document.getElementById('toggleTheme').addEventListener('click', () => this.toggleTheme());
-        
-        // View Toggle
-        document.getElementById('viewToggle').addEventListener('click', () => this.toggleView());
-        
-        // Export Buttons
-        document.getElementById('exportCSV').addEventListener('click', () => this.exportCSV());
-        document.getElementById('exportJSON').addEventListener('click', () => this.exportJSON());
+        try {
+            // Button Event Listeners
+            this.safeAddEventListener('addJudge', 'click', () => this.addJudge());
+            this.safeAddEventListener('removeJudge', 'click', () => this.removeJudge());
+            this.safeAddEventListener('calculateBtn', 'click', () => this.calculateScore());
+            this.safeAddEventListener('resetBtn', 'click', () => this.saveAndReset());
+            this.safeAddEventListener('clearHistory', 'click', () => this.clearHistory());
+            this.safeAddEventListener('toggleTheme', 'click', () => this.toggleTheme());
+            
+            // View Toggle
+            this.safeAddEventListener('viewToggle', 'click', () => this.toggleView());
+            
+            // Export Buttons
+            this.safeAddEventListener('exportCSV', 'click', () => this.exportCSV());
+            this.safeAddEventListener('exportJSON', 'click', () => this.exportJSON());
+            
+            // Timer Buttons
+            this.safeAddEventListener('startTimer', 'click', () => this.startTimer());
+            this.safeAddEventListener('pauseTimer', 'click', () => this.pauseTimer());
+            this.safeAddEventListener('resumeTimer', 'click', () => this.resumeTimer());
+            this.safeAddEventListener('stopTimer', 'click', () => this.stopTimer());
+            
+            // Help Button
+            this.safeAddEventListener('helpButton', 'click', () => this.showHelp());
+
+        } catch (error) {
+            this.handleError('Event Listener Setup fehlgeschlagen', error);
+        }
 
         // Input Event Listeners mit Auto-Save
         document.addEventListener('input', (e) => {
-            if (e.target.classList.contains('judge-input')) {
-                this.validateInput(e.target);
-                this.triggerAutoSave(e.target);
-            } else if (e.target.id === 'participantName') {
-                this.triggerAutoSave(e.target);
+            try {
+                if (e.target.classList.contains('judge-input')) {
+                    this.limitDecimalPlaces(e.target);
+                    this.validateInput(e.target);
+                    this.triggerAutoSave(e.target);
+                } else if (e.target.id === 'participantName') {
+                    this.triggerAutoSave(e.target);
+                }
+            } catch (error) {
+                this.handleError('Input Event Handler Fehler', error);
             }
         });
 
         // Keyboard Navigation für Input-Felder
         document.addEventListener('keydown', (e) => {
-            if (e.target.classList.contains('judge-input')) {
-                if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    this.focusNextInput(e.target);
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    this.focusPreviousInput(e.target);
+            try {
+                if (e.target.classList.contains('judge-input')) {
+                    if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        this.focusNextInput(e.target);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        this.focusPreviousInput(e.target);
+                    }
                 }
+            } catch (error) {
+                this.handleError('Keyboard Navigation Fehler', error);
             }
         });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
-                    case 'Enter':
-                        e.preventDefault();
-                        this.calculateScore();
-                        break;
-                    case 's':
-                        e.preventDefault();
-                        this.saveAndReset();
-                        break;
-                    case 'v':
+            try {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'Enter':
+                            e.preventDefault();
+                            this.calculateScore();
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            this.saveAndReset();
+                            break;
+                                            case 'v':
                         e.preventDefault();
                         this.toggleView();
                         break;
+                    case 't':
+                        e.preventDefault();
+                        this.startTimer();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        if (this.timerPaused) {
+                            this.resumeTimer();
+                        } else {
+                            this.pauseTimer();
+                        }
+                        break;
+                    case 's':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            e.preventDefault();
+                            this.stopTimer();
+                        }
+                        break;
+                    case 'h':
+                    case 'H':
+                        e.preventDefault();
+                        this.showHelp();
+                        break;
+                    }
                 }
+            } catch (error) {
+                this.handleError('Keyboard Shortcut Fehler', error);
             }
         });
 
         // Touch Events für bessere Mobile-Erfahrung
         document.addEventListener('touchstart', (e) => {
-            if (e.target.classList.contains('btn')) {
-                e.target.style.transform = 'scale(0.95)';
+            try {
+                if (e.target.classList.contains('btn')) {
+                    e.target.style.transform = 'scale(0.95)';
+                }
+            } catch (error) {
+                this.handleError('Touch Event Fehler', error);
             }
         }, { passive: true });
 
         document.addEventListener('touchend', (e) => {
-            if (e.target.classList.contains('btn')) {
-                setTimeout(() => {
-                    e.target.style.transform = '';
-                }, 150);
+            try {
+                if (e.target.classList.contains('btn')) {
+                    setTimeout(() => {
+                        e.target.style.transform = '';
+                    }, 150);
+                }
+            } catch (error) {
+                this.handleError('Touch Event Fehler', error);
             }
         }, { passive: true });
     }
@@ -133,7 +208,10 @@ class PoetrySlamCalculator {
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('/sw.js');
+                const basePath = window.location.pathname.includes('/slam-calculator/') ? '/slam-calculator' : '';
+                // Service Worker wird automatisch von Vite PWA registriert
+                console.log('Service Worker wird von Vite PWA Plugin verwaltet');
+                return;
                 console.log('Service Worker registered successfully:', registration);
 
                 // Check for updates
@@ -427,6 +505,18 @@ class PoetrySlamCalculator {
         document.getElementById('judgeCount').textContent = this.currentJudgeCount;
     }
 
+    limitDecimalPlaces(input) {
+        const value = input.value.replace(',', '.');
+        
+        // Begrenze auf eine Nachkommastelle
+        if (value.includes('.')) {
+            const parts = value.split('.');
+            if (parts[1].length > 1) {
+                input.value = parts[0] + '.' + parts[1].substring(0, 1);
+            }
+        }
+    }
+
     validateInput(input) {
         const value = input.value.replace(',', '.');
         const numValue = parseFloat(value);
@@ -434,6 +524,16 @@ class PoetrySlamCalculator {
         input.classList.remove('is-valid', 'is-invalid');
         
         if (value === '') {
+            return false;
+        }
+        
+        // Prüfe auf mehr als eine Nachkommastelle
+        if (value.includes('.') && value.split('.')[1].length > 1) {
+            input.classList.add('is-invalid');
+            const feedback = document.getElementById(`feedback${input.dataset.judgeId}`);
+            if (feedback) {
+                feedback.textContent = 'Maximal eine Nachkommastelle';
+            }
             return false;
         }
         
@@ -507,41 +607,50 @@ class PoetrySlamCalculator {
     }
 
     calculateScore() {
-        const scores = this.getScores();
-        
-        if (!scores) {
-            this.showNotification('Bitte füllen Sie alle Felder mit gültigen Werten (1,0 - 10,0) aus', 'error');
-            return;
+        try {
+            const scores = this.getScores();
+            
+            if (!scores) {
+                this.showNotification('Bitte füllen Sie alle Felder mit gültigen Werten (1,0 - 10,0) aus', 'error');
+                return;
+            }
+
+            // Zeige Progress Bar
+            this.showProgressBar();
+
+            // Simuliere kurze Berechnungszeit für bessere UX
+            setTimeout(() => {
+                try {
+                    // Sortiere die Scores
+                    const sortedScores = [...scores].sort((a, b) => a - b);
+                    
+                    // Entferne die kleinste und größte Zahl
+                    const excludedScores = [sortedScores[0], sortedScores[sortedScores.length - 1]];
+                    const includedScores = sortedScores.slice(1, -1);
+                    
+                    // Berechne die Summe der mittleren Werte
+                    const totalScore = includedScores.reduce((sum, score) => sum + score, 0);
+                    
+                    // Speichere das aktuelle Ergebnis
+                    this.currentResult = {
+                        scores: scores,
+                        excludedScores: excludedScores,
+                        includedScores: includedScores,
+                        totalScore: totalScore,
+                        participantName: document.getElementById('participantName')?.value?.trim() || 'Unbekannt'
+                    };
+                    
+                    this.hideProgressBar();
+                    this.displayResult();
+                    this.showNotification('Berechnung erfolgreich!', 'success');
+                } catch (error) {
+                    this.hideProgressBar();
+                    this.handleError('Fehler bei der Berechnung', error);
+                }
+            }, 500);
+        } catch (error) {
+            this.handleError('Fehler beim Starten der Berechnung', error);
         }
-
-        // Zeige Progress Bar
-        this.showProgressBar();
-
-        // Simuliere kurze Berechnungszeit für bessere UX
-        setTimeout(() => {
-            // Sortiere die Scores
-            const sortedScores = [...scores].sort((a, b) => a - b);
-            
-            // Entferne die kleinste und größte Zahl
-            const excludedScores = [sortedScores[0], sortedScores[sortedScores.length - 1]];
-            const includedScores = sortedScores.slice(1, -1);
-            
-            // Berechne die Summe der mittleren Werte
-            const totalScore = includedScores.reduce((sum, score) => sum + score, 0);
-            
-            // Speichere das aktuelle Ergebnis
-            this.currentResult = {
-                scores: scores,
-                excludedScores: excludedScores,
-                includedScores: includedScores,
-                totalScore: totalScore,
-                participantName: document.getElementById('participantName').value.trim()
-            };
-            
-            this.hideProgressBar();
-            this.displayResult();
-            this.showNotification('Berechnung erfolgreich!', 'success');
-        }, 500);
     }
 
     showProgressBar() {
@@ -611,6 +720,14 @@ class PoetrySlamCalculator {
             allScores: this.currentResult.scores
         };
         
+        // Add timer information if timer was used
+        if (this.timerDuration > 0) {
+            historyEntry.timerUsed = true;
+            historyEntry.timerDuration = this.timerDuration;
+            historyEntry.timeRemaining = this.timerRemaining;
+            historyEntry.timeOverrun = this.timerRemaining <= 0;
+        }
+        
         // Füge zur History hinzu
         this.history.unshift(historyEntry);
         this.saveHistory();
@@ -619,6 +736,9 @@ class PoetrySlamCalculator {
         // Reset
         this.resetForm();
         this.currentResult = null;
+        
+        // Stop timer
+        this.stopTimer();
         
         this.showNotification('Ergebnis gespeichert und Formular zurückgesetzt', 'success');
     }
@@ -653,14 +773,14 @@ class PoetrySlamCalculator {
     }
 
     loadHistory() {
-        const saved = localStorage.getItem('poetrySlamHistory');
-        if (saved) {
-            try {
+        try {
+            const saved = localStorage.getItem('poetrySlamHistory');
+            if (saved) {
                 this.history = JSON.parse(saved);
-            } catch (e) {
-                console.error('Fehler beim Laden der History:', e);
-                this.history = [];
             }
+        } catch (error) {
+            this.handleError('Fehler beim Laden der History', error);
+            this.history = [];
         }
         this.displayHistory();
     }
@@ -668,9 +788,8 @@ class PoetrySlamCalculator {
     saveHistory() {
         try {
             localStorage.setItem('poetrySlamHistory', JSON.stringify(this.history));
-        } catch (e) {
-            console.error('Fehler beim Speichern der History:', e);
-            this.showNotification('Fehler beim Speichern der History', 'error');
+        } catch (error) {
+            this.handleError('Fehler beim Speichern der History', error);
         }
     }
 
@@ -702,31 +821,47 @@ class PoetrySlamCalculator {
     displayHistoryList() {
         const historyList = document.getElementById('historyList');
         
-        historyList.innerHTML = this.history.map(entry => `
-            <div class="history-item fade-in">
-                <button class="btn btn-sm btn-outline-danger delete-btn" onclick="calculator.deleteHistoryEntry(${entry.id})" title="Eintrag löschen">
-                    <i class="bi bi-trash"></i>
-                </button>
-                
-                <div class="timestamp">${entry.timestamp}</div>
-                <div class="participant-name">${entry.participantName}</div>
-                
-                <div class="total-score">
-                    ${entry.totalScore.toFixed(1).replace('.', ',')}
+        historyList.innerHTML = this.history.map(entry => {
+            const timerInfo = entry.timerUsed ? `
+                <div class="timer-info mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> 
+                        ${(entry.timerDuration / 60).toFixed(1)}min Timer
+                        ${entry.timeOverrun ? 
+                            `<span class="text-danger">(Zeit überschritten)</span>` : 
+                            `<span class="text-success">(${Math.floor(entry.timeRemaining / 60)}:${(entry.timeRemaining % 60).toString().padStart(2, '0')} verbleibend)</span>`
+                        }
+                    </small>
                 </div>
-                
-                <div class="scores">
-                    <div class="excluded-scores">
-                        <small>Gestrichen</small>
-                        <div>${entry.excludedScores.map(s => s.toFixed(1).replace('.', ',')).join(', ')}</div>
+            ` : '';
+            
+            return `
+                <div class="history-item fade-in">
+                    <button class="btn btn-sm btn-outline-danger delete-btn" onclick="calculator.deleteHistoryEntry(${entry.id})" title="Eintrag löschen">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    
+                    <div class="timestamp">${entry.timestamp}</div>
+                    <div class="participant-name">${entry.participantName}</div>
+                    
+                    <div class="total-score">
+                        ${entry.totalScore.toFixed(1).replace('.', ',')}
                     </div>
-                    <div class="included-scores">
-                        <small>Gewertet</small>
-                        <div>${entry.includedScores.map(s => s.toFixed(1).replace('.', ',')).join(', ')}</div>
+                    
+                    <div class="scores">
+                        <div class="excluded-scores">
+                            <small>Gestrichen</small>
+                            <div>${entry.excludedScores.map(s => s.toFixed(1).replace('.', ',')).join(' / ')}</div>
+                        </div>
+                        <div class="included-scores">
+                            <small>Gewertet</small>
+                            <div>${entry.includedScores.map(s => s.toFixed(1).replace('.', ',')).join(' / ')}</div>
+                        </div>
                     </div>
+                    ${timerInfo}
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     displayHistoryTable() {
@@ -815,32 +950,464 @@ class PoetrySlamCalculator {
     }
 
     showNotification(message, type = 'info') {
-        const toast = document.getElementById('notificationToast');
-        const toastMessage = document.getElementById('toastMessage');
-        
-        toastMessage.textContent = message;
-        
-        // Entferne alte Klassen
-        toast.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
-        
-        // Füge neue Klasse hinzu
-        switch (type) {
-            case 'success':
-                toast.classList.add('bg-success', 'text-white');
-                break;
-            case 'error':
-                toast.classList.add('bg-danger', 'text-white');
-                break;
-            case 'warning':
-                toast.classList.add('bg-warning', 'text-dark');
-                break;
-            default:
-                toast.classList.add('bg-info', 'text-white');
+        try {
+            const toast = document.getElementById('notificationToast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            if (!toast || !toastMessage) {
+                console.error('Toast-Elemente nicht gefunden');
+                return;
+            }
+            
+            toastMessage.textContent = message;
+            
+            // Entferne alte Klassen
+            toast.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+            
+            // Füge neue Klasse hinzu
+            switch (type) {
+                case 'success':
+                    toast.classList.add('bg-success', 'text-white');
+                    break;
+                case 'error':
+                    toast.classList.add('bg-danger', 'text-white');
+                    break;
+                case 'warning':
+                    toast.classList.add('bg-warning', 'text-dark');
+                    break;
+                default:
+                    toast.classList.add('bg-info', 'text-white');
+            }
+            
+            // Zeige Toast
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        } catch (error) {
+            console.error('Fehler beim Anzeigen der Benachrichtigung:', error);
+            // Fallback: Alert verwenden
+            alert(`${type.toUpperCase()}: ${message}`);
         }
+    }
+
+    // Error Handling System
+    setupErrorHandling() {
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            this.handleError('Globaler Fehler', event.error);
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            this.handleError('Unbehandelte Promise-Ablehnung', event.reason);
+        });
+
+        // Console error interceptor
+        const originalConsoleError = console.error;
+        console.error = (...args) => {
+            this.logError('Console Error', args.join(' '));
+            originalConsoleError.apply(console, args);
+        };
+    }
+
+    handleError(message, error) {
+        this.errorCount++;
+        const errorInfo = {
+            timestamp: new Date().toISOString(),
+            message: message,
+            error: error?.message || error?.toString() || 'Unbekannter Fehler',
+            stack: error?.stack,
+            userAgent: navigator.userAgent,
+            url: window.location.href
+        };
+
+        this.errorLog.push(errorInfo);
+        this.logError(message, error);
+
+        // Zeige Benutzer-freundliche Nachricht
+        this.showNotification(`Ein Fehler ist aufgetreten: ${message}`, 'error');
+
+        // Bei zu vielen Fehlern: App-Neustart vorschlagen
+        if (this.errorCount >= this.maxErrors) {
+            this.suggestAppRestart();
+        }
+
+        // Speichere Error Log
+        this.saveErrorLog();
+    }
+
+    logError(message, error) {
+        console.error(`[${new Date().toISOString()}] ${message}:`, error);
+    }
+
+    suggestAppRestart() {
+        const restart = confirm(
+            'Es sind mehrere Fehler aufgetreten. Möchten Sie die App neu starten?'
+        );
+        if (restart) {
+            window.location.reload();
+        }
+    }
+
+    saveErrorLog() {
+        try {
+            localStorage.setItem('poetrySlamErrorLog', JSON.stringify(this.errorLog));
+        } catch (error) {
+            console.error('Fehler beim Speichern des Error Logs:', error);
+        }
+    }
+
+    loadErrorLog() {
+        try {
+            const savedLog = localStorage.getItem('poetrySlamErrorLog');
+            if (savedLog) {
+                this.errorLog = JSON.parse(savedLog);
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden des Error Logs:', error);
+        }
+    }
+
+    safeAddEventListener(elementId, event, handler) {
+        try {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener(event, handler);
+            } else {
+                this.logError(`Element nicht gefunden: ${elementId}`, new Error(`Element ${elementId} existiert nicht`));
+            }
+        } catch (error) {
+            this.handleError(`Event Listener Fehler für ${elementId}`, error);
+        }
+    }
+
+    safeGetElement(elementId) {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            this.logError(`Element nicht gefunden: ${elementId}`, new Error(`Element ${elementId} existiert nicht`));
+        }
+        return element;
+    }
+
+    // Debug-Funktionen für Entwickler
+    debugInfo() {
+        const info = {
+            version: '1.2',
+            errorCount: this.errorCount,
+            errorLog: this.errorLog,
+            historyLength: this.history.length,
+            currentJudgeCount: this.currentJudgeCount,
+            currentView: this.currentView,
+            userAgent: navigator.userAgent,
+            localStorage: {
+                available: typeof Storage !== 'undefined',
+                history: localStorage.getItem('poetrySlamHistory') ? 'available' : 'not found',
+                theme: localStorage.getItem('theme') || 'not set',
+                viewMode: localStorage.getItem('viewMode') || 'not set'
+            },
+            serviceWorker: 'serviceWorker' in navigator ? 'supported' : 'not supported',
+            online: navigator.onLine
+        };
         
-        // Zeige Toast
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
+        console.log('Debug Info:', info);
+        return info;
+    }
+
+    exportErrorLog() {
+        try {
+            const errorData = {
+                exportDate: new Date().toISOString(),
+                errorCount: this.errorCount,
+                errors: this.errorLog
+            };
+            
+            const jsonContent = JSON.stringify(errorData, null, 2);
+            this.downloadFile(jsonContent, 'error-log.json', 'application/json');
+            this.showNotification('Error Log exportiert', 'success');
+        } catch (error) {
+            this.handleError('Fehler beim Exportieren des Error Logs', error);
+        }
+    }
+
+    clearErrorLog() {
+        try {
+            this.errorLog = [];
+            this.errorCount = 0;
+            localStorage.removeItem('poetrySlamErrorLog');
+            this.showNotification('Error Log gelöscht', 'success');
+        } catch (error) {
+            this.handleError('Fehler beim Löschen des Error Logs', error);
+        }
+    }
+
+    // Initialize Bootstrap tooltips
+    initializeTooltips() {
+        try {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        } catch (error) {
+            this.handleError('Fehler beim Initialisieren der Tooltips', error);
+        }
+    }
+
+    // Timer Functions
+    startTimer() {
+        try {
+            const minutes = parseFloat(document.getElementById('timerMinutes').value);
+            if (isNaN(minutes) || minutes < 0.5 || minutes > 60) {
+                this.showNotification('Bitte geben Sie eine gültige Zeit zwischen 0,5 und 60 Minuten ein', 'warning');
+                return;
+            }
+
+            this.timerDuration = minutes * 60; // Convert to seconds
+            this.timerRemaining = this.timerDuration;
+            this.timerStartTime = Date.now();
+            this.timerPaused = false;
+            this.timerPauseTime = 0;
+
+            // Show timer container
+            document.getElementById('timerContainer').style.display = 'block';
+            
+            // Update button states
+            document.getElementById('startTimer').disabled = true;
+            document.getElementById('pauseTimer').style.display = 'inline-block';
+            document.getElementById('resumeTimer').style.display = 'none';
+            document.getElementById('stopTimer').disabled = false;
+
+            // Start timer interval
+            this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+            
+            // Initial update
+            this.updateTimer();
+            
+            this.showNotification(`Timer gestartet: ${minutes} Minuten`, 'success');
+            
+            // Play sound for timer start
+            this.playTimerSound('start');
+            
+        } catch (error) {
+            this.handleError('Fehler beim Starten des Timers', error);
+        }
+    }
+
+    pauseTimer() {
+        try {
+            if (this.timerInterval && !this.timerPaused) {
+                clearInterval(this.timerInterval);
+                this.timerPaused = true;
+                this.timerPauseTime = Date.now();
+                
+                // Update button states
+                document.getElementById('pauseTimer').style.display = 'none';
+                document.getElementById('resumeTimer').style.display = 'inline-block';
+                
+                this.showNotification('Timer pausiert', 'info');
+            }
+        } catch (error) {
+            this.handleError('Fehler beim Pausieren des Timers', error);
+        }
+    }
+
+    resumeTimer() {
+        try {
+            if (this.timerPaused) {
+                // Adjust start time for pause duration
+                const pauseDuration = Date.now() - this.timerPauseTime;
+                this.timerStartTime += pauseDuration;
+                
+                this.timerPaused = false;
+                this.timerPauseTime = 0;
+                
+                // Restart timer interval
+                this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+                
+                // Update button states
+                document.getElementById('pauseTimer').style.display = 'inline-block';
+                document.getElementById('resumeTimer').style.display = 'none';
+                
+                this.showNotification('Timer fortgesetzt', 'info');
+            }
+        } catch (error) {
+            this.handleError('Fehler beim Fortsetzen des Timers', error);
+        }
+    }
+
+    stopTimer() {
+        try {
+            if (this.timerInterval) {
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            }
+            
+            // Reset timer state
+            this.timerRemaining = 0;
+            this.timerPaused = false;
+            this.timerPauseTime = 0;
+            
+            // Hide timer container
+            document.getElementById('timerContainer').style.display = 'none';
+            
+            // Reset button states
+            document.getElementById('startTimer').disabled = false;
+            document.getElementById('pauseTimer').style.display = 'inline-block';
+            document.getElementById('resumeTimer').style.display = 'none';
+            document.getElementById('stopTimer').disabled = true;
+            
+            // Remove warning/danger classes
+            const timerDisplay = document.getElementById('timerDisplay');
+            timerDisplay.classList.remove('text-warning', 'text-danger', 'timer-warning', 'timer-danger');
+            timerDisplay.classList.add('text-primary');
+            
+            this.showNotification('Timer gestoppt', 'info');
+            
+        } catch (error) {
+            this.handleError('Fehler beim Stoppen des Timers', error);
+        }
+    }
+
+    updateTimer() {
+        try {
+            if (!this.timerStartTime || this.timerPaused) return;
+            
+            const elapsed = Math.floor((Date.now() - this.timerStartTime) / 1000);
+            this.timerRemaining = Math.max(0, this.timerDuration - elapsed);
+            
+            // Update display
+            const minutes = Math.floor(this.timerRemaining / 60);
+            const seconds = this.timerRemaining % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('timerDisplay').textContent = display;
+            
+            // Update progress bar
+            const progressPercent = (this.timerRemaining / this.timerDuration) * 100;
+            document.getElementById('timerProgress').style.width = `${progressPercent}%`;
+            
+            // Update visual states
+            this.updateTimerVisualState();
+            
+            // Check if timer finished
+            if (this.timerRemaining <= 0) {
+                this.timerFinished();
+            }
+            
+        } catch (error) {
+            this.handleError('Fehler beim Aktualisieren des Timers', error);
+        }
+    }
+
+    updateTimerVisualState() {
+        try {
+            const timerDisplay = document.getElementById('timerDisplay');
+            const progressBar = document.getElementById('timerProgress');
+            const remainingPercent = (this.timerRemaining / this.timerDuration) * 100;
+            
+            // Remove all state classes
+            timerDisplay.classList.remove('text-primary', 'text-warning', 'text-danger', 'timer-warning', 'timer-danger');
+            progressBar.classList.remove('bg-primary', 'bg-warning', 'bg-danger');
+            
+            if (remainingPercent > 50) {
+                // Normal state
+                timerDisplay.classList.add('text-primary');
+                progressBar.classList.add('bg-primary');
+            } else if (remainingPercent > 20) {
+                // Warning state
+                timerDisplay.classList.add('text-warning', 'timer-warning');
+                progressBar.classList.add('bg-warning');
+            } else {
+                // Danger state
+                timerDisplay.classList.add('text-danger', 'timer-danger');
+                progressBar.classList.add('bg-danger');
+            }
+            
+        } catch (error) {
+            this.handleError('Fehler beim Aktualisieren des Timer-Zustands', error);
+        }
+    }
+
+    timerFinished() {
+        try {
+            // Stop timer
+            this.stopTimer();
+            
+            // Show notification
+            this.showNotification('Zeit ist abgelaufen!', 'warning');
+            
+            // Play sound
+            this.playTimerSound('finish');
+            
+        } catch (error) {
+            this.handleError('Fehler beim Timer-Ende', error);
+        }
+    }
+
+    playTimerSound(type) {
+        try {
+            // Create audio context for sound effects
+            if ('AudioContext' in window || 'webkitAudioContext' in window) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                if (type === 'start') {
+                    // Play start sound (high beep)
+                    this.playBeep(audioContext, 800, 200);
+                } else if (type === 'finish') {
+                    // Play finish sound (low beep)
+                    this.playBeep(audioContext, 400, 500);
+                }
+            }
+        } catch (error) {
+            // Silently fail if audio is not supported
+            console.log('Audio nicht unterstützt');
+        }
+    }
+
+    playBeep(audioContext, frequency, duration) {
+        try {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        } catch (error) {
+            console.log('Beep konnte nicht abgespielt werden');
+        }
+    }
+
+    // Help Modal Functions
+    showHelp() {
+        try {
+            const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+            helpModal.show();
+            
+            // Analytics tracking (optional)
+            this.trackHelpUsage();
+            
+        } catch (error) {
+            this.handleError('Fehler beim Anzeigen der Hilfe', error);
+        }
+    }
+
+    trackHelpUsage() {
+        try {
+            // Optional: Track help usage for analytics
+            const helpCount = parseInt(localStorage.getItem('helpUsageCount') || '0');
+            localStorage.setItem('helpUsageCount', (helpCount + 1).toString());
+            
+            // Could send to analytics service here
+            console.log('Help accessed', helpCount + 1, 'times');
+        } catch (error) {
+            // Silently fail for analytics
+        }
     }
 
     // PWA Service Worker Registration
@@ -861,16 +1428,24 @@ class PoetrySlamCalculator {
 let calculator;
 
 document.addEventListener('DOMContentLoaded', () => {
-    calculator = new PoetrySlamCalculator();
-    calculator.registerServiceWorker();
-    
-    // Event Listener für Resize-Events
-    window.addEventListener('resize', () => {
-        // Regeneriere Inputs bei Größenänderung für bessere mobile Anpassung
-        setTimeout(() => {
-            calculator.generateJudgeInputs();
-        }, 100);
-    });
+    try {
+        calculator = new PoetrySlamCalculator();
+        
+        // Event Listener für Resize-Events
+        window.addEventListener('resize', () => {
+            try {
+                // Regeneriere Inputs bei Größenänderung für bessere mobile Anpassung
+                setTimeout(() => {
+                    calculator.generateJudgeInputs();
+                }, 100);
+            } catch (error) {
+                calculator?.handleError('Resize Event Fehler', error);
+            }
+        });
+    } catch (error) {
+        console.error('Kritischer Fehler bei der App-Initialisierung:', error);
+        alert('Die App konnte nicht gestartet werden. Bitte laden Sie die Seite neu.');
+    }
 });
 
 // Install-Prompt für PWA
@@ -886,3 +1461,33 @@ window.addEventListener('beforeinstallprompt', (e) => {
         console.log('PWA kann installiert werden');
     }
 });
+
+// Globale Debug-Funktionen (nur im Entwicklungsmodus)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    window.debugApp = () => {
+        if (calculator) {
+            return calculator.debugInfo();
+        } else {
+            console.error('App nicht initialisiert');
+            return null;
+        }
+    };
+    
+    window.exportErrors = () => {
+        if (calculator) {
+            calculator.exportErrorLog();
+        } else {
+            console.error('App nicht initialisiert');
+        }
+    };
+    
+    window.clearErrors = () => {
+        if (calculator) {
+            calculator.clearErrorLog();
+        } else {
+            console.error('App nicht initialisiert');
+        }
+    };
+    
+    console.log('Debug-Funktionen verfügbar: debugApp(), exportErrors(), clearErrors()');
+}

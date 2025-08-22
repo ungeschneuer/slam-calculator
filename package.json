@@ -1,0 +1,29 @@
+{
+  "name": "poetry-slam-calculator",
+  "version": "1.2.0",
+  "description": "Professioneller Punktesummen-Rechner für Poetry Slam Wettbewerbe",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:pages": "NODE_ENV=production vite build",
+    "clean": "rm -rf dist",
+    "deploy": "npm run build:pages && echo 'Build completed. Push to main branch to deploy.'"
+  },
+  "keywords": [
+    "poetry-slam",
+    "calculator",
+    "pwa",
+    "offline",
+    "timer",
+    "scoring"
+  ],
+  "author": "Marcel Schneuer",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vite-plugin-pwa": "^0.17.0",
+    "vite-plugin-compression": "^0.5.1"
+  }
+}
