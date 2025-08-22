@@ -497,7 +497,7 @@ class PoetrySlamCalculator {
     // Offline-Status überwachen
     setupOfflineMonitoring() {
         window.addEventListener('online', () => {
-            this.showNotification('Verbindung wiederhergestellt', 'success');
+    
             this.syncOfflineData();
         });
 
@@ -524,7 +524,7 @@ class PoetrySlamCalculator {
                 
                 // Clear offline data after successful sync
                 localStorage.removeItem('poetrySlamOfflineData');
-                this.showNotification('Offline-Daten synchronisiert', 'success');
+        
             }
         } catch (error) {
             console.error('Sync failed:', error);
@@ -815,7 +815,7 @@ class PoetrySlamCalculator {
                     
                     this.hideProgressBar();
                     this.displayResult();
-                    this.showNotification('Berechnung erfolgreich!', 'success');
+            
                 } catch (error) {
                     this.hideProgressBar();
                     this.handleError('Fehler bei der Berechnung', error);
@@ -913,7 +913,7 @@ class PoetrySlamCalculator {
         // Stop timer
         this.stopTimer();
         
-        this.showNotification('Ergebnis gespeichert und Formular zurückgesetzt', 'success');
+
     }
 
     resetForm() {
@@ -1058,7 +1058,7 @@ class PoetrySlamCalculator {
         this.history = this.history.filter(entry => entry.id !== id);
         this.saveHistory();
         this.displayHistory();
-        this.showNotification('Eintrag gelöscht', 'success');
+
     }
 
     clearHistory() {
@@ -1066,7 +1066,7 @@ class PoetrySlamCalculator {
             this.history = [];
             this.saveHistory();
             this.displayHistory();
-            this.showNotification('History gelöscht', 'success');
+    
         }
     }
 
@@ -1090,7 +1090,7 @@ class PoetrySlamCalculator {
         ].join('\n');
 
         this.downloadFile(csvContent, 'poetry-slam-history.csv', 'text/csv;charset=utf-8;');
-        this.showNotification('CSV Export erfolgreich!', 'success');
+
     }
 
     exportJSON() {
@@ -1107,7 +1107,7 @@ class PoetrySlamCalculator {
 
         const jsonContent = JSON.stringify(exportData, null, 2);
         this.downloadFile(jsonContent, 'poetry-slam-history.json', 'application/json');
-        this.showNotification('JSON Export erfolgreich!', 'success');
+
     }
 
     downloadFile(content, filename, mimeType) {
@@ -1296,7 +1296,7 @@ class PoetrySlamCalculator {
             
             const jsonContent = JSON.stringify(errorData, null, 2);
             this.downloadFile(jsonContent, 'error-log.json', 'application/json');
-            this.showNotification('Error Log exportiert', 'success');
+    
         } catch (error) {
             this.handleError('Fehler beim Exportieren des Error Logs', error);
         }
@@ -1307,7 +1307,7 @@ class PoetrySlamCalculator {
             this.errorLog = [];
             this.errorCount = 0;
             localStorage.removeItem('poetrySlamErrorLog');
-            this.showNotification('Error Log gelöscht', 'success');
+    
         } catch (error) {
             this.handleError('Fehler beim Löschen des Error Logs', error);
         }
@@ -1355,7 +1355,7 @@ class PoetrySlamCalculator {
             // Initial update
             this.updateTimer();
             
-            this.showNotification(`Timer gestartet: ${minutes} Minuten`, 'success');
+    
             
             // Play sound for timer start
             this.playTimerSound('start');
@@ -1409,6 +1409,9 @@ class PoetrySlamCalculator {
 
     stopTimer() {
         try {
+            // Check if timer is actually running
+            const wasRunning = this.timerInterval !== null;
+            
             if (this.timerInterval) {
                 clearInterval(this.timerInterval);
                 this.timerInterval = null;
@@ -1433,7 +1436,10 @@ class PoetrySlamCalculator {
             timerDisplay.classList.remove('text-warning', 'text-danger', 'timer-warning', 'timer-danger');
             timerDisplay.classList.add('text-primary');
             
-            this.showNotification('Timer gestoppt', 'info');
+            // Only show notification if timer was actually running
+            if (wasRunning) {
+                this.showNotification('Timer gestoppt', 'info');
+            }
             
         } catch (error) {
             this.handleError('Fehler beim Stoppen des Timers', error);
@@ -1650,7 +1656,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Handle the user choice asynchronously
                     window.deferredPrompt.userChoice.then((choiceResult) => {
                         if (choiceResult.outcome === 'accepted') {
-                            calculator.showNotification('App wird installiert...', 'success');
+    
                         } else {
                             calculator.showNotification('Installation abgebrochen', 'info');
                         }
