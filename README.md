@@ -1,6 +1,10 @@
-# Poetry Slam Punktesummen-Rechner
+# 🎭 Poetry Slam Punktesummen-Rechner
 
-Ein moderner, responsiver Punktesummen-Rechner für Poetry Slam Wettbewerbe mit Offline-Funktionalität.
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/marcel-schneuer/slam-calculator)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PWA](https://img.shields.io/badge/PWA-enabled-purple.svg)](https://web.dev/progressive-web-apps/)
+
+Ein moderner, responsiver Punktesummen-Rechner für Poetry Slam Wettbewerbe mit vollständiger Offline-Funktionalität. Entwickelt als Progressive Web App (PWA) für optimale Performance und Benutzerfreundlichkeit auf allen Geräten.
 
 ## 🌟 Features
 
@@ -124,21 +128,148 @@ slam-calculator/
 
 ## 🔧 Entwicklung
 
-### **Lokale Entwicklung**
+### **Setup für lokale Entwicklung**
 ```bash
-# Einfacher HTTP-Server für PWA-Testing
-python3 -m http.server 8000
-# oder
-npx serve .
+# Repository klonen
+git clone https://github.com/marcel-schneuer/slam-calculator.git
+cd slam-calculator
 
-# Öffnen Sie http://localhost:8000
+# Dependencies installieren
+npm install
+
+# Development Server starten
+npm run dev
+
+# Für PWA-Testing (mit Service Worker)
+npm run build
+npm run preview
 ```
 
-### **Cache-Busting**
-Bei Änderungen an CSS/JS-Dateien:
-1. Version in `index.html` erhöhen: `?v=1.3`
-2. Service Worker Cache-Name aktualisieren
-3. Manifest-Version anpassen
+### **Verfügbare Scripts**
+```bash
+npm run dev       # Development Server (Vite)
+npm run build     # Production Build
+npm run preview   # Preview der Production Build
+npm run clean     # Build-Ordner löschen
+```
+
+### **Code-Qualität**
+Das Projekt verwendet moderne JavaScript-Standards:
+- **ES6+ Syntax**: Classes, Arrow Functions, Async/Await
+- **JSDoc Kommentare**: Vollständige API-Dokumentation
+- **Error Handling**: Umfassendes Fehler-Management
+- **Performance Optimierung**: Lazy Loading, Caching-Strategien
+
+## 📚 API Dokumentation
+
+### **Hauptklasse: PoetrySlamCalculator**
+
+Die Anwendung basiert auf einer einzigen Hauptklasse, die alle Funktionalitäten kapselt:
+
+```javascript
+/**
+ * Poetry Slam Punktesummen-Rechner
+ * @class PoetrySlamCalculator
+ * @version 1.3.0
+ */
+class PoetrySlamCalculator {
+    // Kern-Funktionalitäten
+    calculateScore()     // Berechnet Slam-Ergebnis
+    addJudge()          // Fügt Juror hinzu
+    removeJudge()       // Entfernt Juror
+    
+    // Daten-Management
+    saveAndReset()      // Speichert in History und resettet
+    loadHistory()       // Lädt gespeicherte Historie
+    exportCSV()         // CSV-Export der Historie
+    exportJSON()        // JSON-Export der Historie
+    
+    // Timer-Funktionen
+    startTimer()        // Startet Performance-Timer
+    pauseTimer()        // Pausiert Timer
+    resumeTimer()       // Setzt Timer fort
+    stopTimer()         // Stoppt Timer
+    
+    // UI-Management
+    toggleTheme()       // Wechselt Dark/Light Mode
+    toggleView()        // Wechselt Listen-/Tabellenansicht
+    showHelp()          // Zeigt Hilfe-Modal
+}
+```
+
+### **Datenstrukturen**
+
+#### **Score-Berechnung**
+```javascript
+{
+    total: 28.5,           // Gesamtergebnis
+    scores: [9.2, 9.8, 9.5, 9.1, 8.9],  // Alle Bewertungen
+    validScores: [9.2, 9.5, 9.1],       // Gewertete Scores
+    excludedScores: [9.8, 8.9],         // Ausgeschlossene Scores
+    participantName: "Max Mustermann",    // Optional
+    timestamp: "2024-01-15T14:30:00Z"    // ISO Timestamp
+}
+```
+
+#### **History-Eintrag**
+```javascript
+{
+    id: "unique-id-123",
+    timestamp: "2024-01-15T14:30:00Z",
+    participantName: "Max Mustermann",
+    total: 28.5,
+    scores: [9.2, 9.8, 9.5, 9.1, 8.9],
+    validScores: [9.2, 9.5, 9.1],
+    excludedScores: [9.8, 8.9],
+    judgeCount: 5
+}
+```
+
+### **Event-System**
+
+#### **Keyboard Shortcuts**
+```javascript
+// Globale Shortcuts (Ctrl/Cmd + Key)
+'Ctrl+Enter'  → calculateScore()
+'Ctrl+S'      → saveAndReset()
+'Ctrl+V'      → toggleView()
+'Ctrl+T'      → startTimer()
+'Ctrl+P'      → pauseTimer()/resumeTimer()
+'Ctrl+H'      → showHelp()
+
+// Einzelne Tasten (außerhalb von Eingabefeldern)
+'T'           → startTimer()
+'P'           → pauseTimer()/resumeTimer()
+'S'           → stopTimer()
+'H'           → showHelp()
+```
+
+#### **Auto-Save**
+```javascript
+// Automatisches Speichern nach 1 Sekunde Inaktivität
+autoSaveDelay: 1000  // Millisekunden
+```
+
+### **Storage-Management**
+
+#### **localStorage Keys**
+```javascript
+'poetrySlamHistory'    // Historie der Berechnungen
+'poetrySlamAutoSave'   // Auto-gespeicherte Eingaben
+'theme'                // Ausgewähltes Theme (dark/light)
+'viewMode'             // Aktuelle Ansicht (list/table)
+'helpUsageCount'       // Anzahl Hilfe-Aufrufe
+'poetrySlamErrors'     // Error-Log für Debugging
+```
+
+### **Fehler-Behandlung**
+
+Das System verwendet mehrstufiges Error-Handling:
+
+1. **Try-Catch Blöcke**: In allen kritischen Funktionen
+2. **Error-Logging**: Automatische Fehler-Protokollierung
+3. **User-Feedback**: Benutzerfreundliche Fehlermeldungen
+4. **Graceful Degradation**: Funktionalität bleibt bei Teilfehlern erhalten
 
 ## 🎯 Zukünftige Verbesserungen
 

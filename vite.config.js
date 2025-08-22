@@ -107,7 +107,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        cacheId: 'poetry-slam-calculator-v1.3.0',
+        cacheId: 'poetry-slam-calculator-v1.3.1',
         navigateFallback: process.env.NODE_ENV === 'production' ? '/slam-calculator/index.html' : '/index.html',
         navigateFallbackAllowlist: [/^(?!\/__).*/],
         runtimeCaching: [
@@ -137,6 +137,9 @@ export default defineConfig({
         orientation: 'portrait-primary',
         scope: process.env.NODE_ENV === 'production' ? '/slam-calculator/' : '/',
         start_url: process.env.NODE_ENV === 'production' ? '/slam-calculator/' : '/',
+        categories: ['utilities', 'productivity'],
+        lang: 'de',
+        dir: 'ltr',
         icons: [
           {
             src: process.env.NODE_ENV === 'production' ? '/slam-calculator/assets/icons/icon-72x72.png' : 'assets/icons/icon-72x72.png',

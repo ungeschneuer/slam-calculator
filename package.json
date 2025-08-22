@@ -1,8 +1,9 @@
 {
   "name": "poetry-slam-calculator",
-  "version": "1.3.0",
-  "description": "Professioneller Punktesummen-Rechner für Poetry Slam Wettbewerbe",
+  "version": "1.3.1",
+  "description": "Professioneller Punktesummen-Rechner für Poetry Slam Wettbewerbe mit PWA-Funktionalität",
   "main": "index.html",
+
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -17,10 +18,28 @@
     "pwa",
     "offline",
     "timer",
-    "scoring"
+    "scoring",
+    "progressive-web-app",
+    "responsive",
+    "dark-mode",
+    "typescript-ready"
   ],
-  "author": "Marcel Schneuer",
+  "author": {
+    "name": "Marcel Schneuer",
+    "url": "https://github.com/marcel-schneuer"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marcel-schneuer/slam-calculator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/marcel-schneuer/slam-calculator/issues"
+  },
+  "homepage": "https://marcel-schneuer.github.io/slam-calculator/",
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "devDependencies": {
     "vite": "^5.0.0",
     "vite-plugin-pwa": "^0.17.0",

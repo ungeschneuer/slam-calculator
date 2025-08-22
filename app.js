@@ -1,78 +1,145 @@
-// Poetry Slam Punktesummen-Rechner
+/**
+ * Poetry Slam Punktesummen-Rechner
+ * 
+ * A comprehensive scoring calculator for Poetry Slam competitions featuring:
+ * - Dynamic judge management (3-15 judges)
+ * - Intelligent scoring calculation (drops highest/lowest scores)
+ * - Offline-first PWA architecture
+ * - Dark/light mode support
+ * - Comprehensive history tracking
+ * - Built-in timer functionality
+ * 
+ * @class PoetrySlamCalculator
+ * @author Marcel Schneuer
+ * @version 1.3.0
+ */
 class PoetrySlamCalculator {
+    /**
+     * Initialize the Poetry Slam Calculator
+     * Sets up all default values and initializes the application
+     */
     constructor() {
+        // Core configuration
+        /** @type {number} Minimum number of judges allowed */
         this.minJudges = 3;
+        /** @type {number} Maximum number of judges allowed */
         this.maxJudges = 15;
+        /** @type {number} Current number of active judges */
         this.currentJudgeCount = 5;
+        
+        // Data management
+        /** @type {Array} History of all calculations */
         this.history = [];
+        /** @type {Object|null} Current calculation result */
         this.currentResult = null;
-        this.currentView = 'list'; // 'list' oder 'table'
+        /** @type {string} Current view mode: 'list' or 'table' */
+        this.currentView = 'list';
+        
+        // Auto-save functionality
+        /** @type {number|null} Timeout ID for auto-save */
         this.autoSaveTimeout = null;
-        this.autoSaveDelay = 1000; // 1 Sekunde
+        /** @type {number} Delay before auto-save triggers (in ms) */
+        this.autoSaveDelay = 1000;
+        
+        // Error handling
+        /** @type {number} Current error count */
         this.errorCount = 0;
+        /** @type {number} Maximum errors before alert */
         this.maxErrors = 5;
+        /** @type {Array} Log of all errors */
         this.errorLog = [];
         
-        // Timer properties
+        // Timer functionality
+        /** @type {number|null} Timer interval ID */
         this.timerInterval = null;
+        /** @type {number|null} Timer start timestamp */
         this.timerStartTime = null;
+        /** @type {number} Timer duration in milliseconds */
         this.timerDuration = 0;
+        /** @type {number} Remaining time in milliseconds */
         this.timerRemaining = 0;
+        /** @type {boolean} Timer pause state */
         this.timerPaused = false;
+        /** @type {number} Timestamp when timer was paused */
         this.timerPauseTime = 0;
         
         this.init();
     }
 
+    /**
+     * Initialize the application
+     * Sets up all components, event listeners, and loads saved data
+     * @throws {Error} If critical initialization fails
+     */
     init() {
         try {
+            // Load saved data
             this.loadHistory();
-            this.setupEventListeners();
-            this.setupDarkMode();
-            this.generateJudgeInputs();
-            this.updateJudgeCount();
             this.loadTheme();
             this.loadViewPreference();
+            
+            // Setup core functionality
+            this.setupEventListeners();
+            this.setupDarkMode();
+            this.setupErrorHandling();
+            this.setupOfflineMonitoring();
+            
+            // Initialize UI
+            this.generateJudgeInputs();
+            this.updateJudgeCount();
+            this.initializeTooltips();
+            
+            // Setup PWA features
             this.registerServiceWorker();
-                    this.setupOfflineMonitoring();
-        this.setupErrorHandling();
-        this.initializeTooltips();
         } catch (error) {
             this.handleError('Initialisierung fehlgeschlagen', error);
         }
     }
 
+    /**
+     * Set up all event listeners for the application
+     * Includes button clicks, keyboard navigation, and input validation
+     * @throws {Error} If critical event listeners fail to attach
+     */
     setupEventListeners() {
         try {
-            // Button Event Listeners
+            // Core action buttons
             this.safeAddEventListener('addJudge', 'click', () => this.addJudge());
             this.safeAddEventListener('removeJudge', 'click', () => this.removeJudge());
             this.safeAddEventListener('calculateBtn', 'click', () => this.calculateScore());
             this.safeAddEventListener('resetBtn', 'click', () => this.saveAndReset());
+            
+            // History and data management
             this.safeAddEventListener('clearHistory', 'click', () => this.clearHistory());
-            this.safeAddEventListener('toggleTheme', 'click', () => this.toggleTheme());
-            
-            // View Toggle
             this.safeAddEventListener('viewToggle', 'click', () => this.toggleView());
-            
-            // Export Buttons
             this.safeAddEventListener('exportCSV', 'click', () => this.exportCSV());
             this.safeAddEventListener('exportJSON', 'click', () => this.exportJSON());
             
-            // Timer Buttons
+            // UI controls
+            this.safeAddEventListener('toggleTheme', 'click', () => this.toggleTheme());
+            this.safeAddEventListener('helpButton', 'click', () => this.showHelp());
+            
+            // Timer functionality
             this.safeAddEventListener('startTimer', 'click', () => this.startTimer());
             this.safeAddEventListener('pauseTimer', 'click', () => this.pauseTimer());
             this.safeAddEventListener('resumeTimer', 'click', () => this.resumeTimer());
             this.safeAddEventListener('stopTimer', 'click', () => this.stopTimer());
-            
-            // Help Button
-            this.safeAddEventListener('helpButton', 'click', () => this.showHelp());
 
         } catch (error) {
             this.handleError('Event Listener Setup fehlgeschlagen', error);
         }
 
-        // Input Event Listeners mit Auto-Save
+        // Setup specialized event handlers
+        this.setupInputListeners();
+        this.setupKeyboardListeners();
+        this.setupTouchListeners();
+    }
+
+    /**
+     * Set up input validation and auto-save listeners
+     * Handles real-time validation and automatic saving
+     */
+    setupInputListeners() {
         document.addEventListener('input', (e) => {
             try {
                 if (e.target.classList.contains('judge-input')) {
@@ -86,10 +153,16 @@ class PoetrySlamCalculator {
                 this.handleError('Input Event Handler Fehler', error);
             }
         });
+    }
 
-        // Keyboard Navigation für Input-Felder
+    /**
+     * Set up keyboard navigation and shortcuts
+     * Includes input field navigation and global shortcuts
+     */
+    setupKeyboardListeners() {
         document.addEventListener('keydown', (e) => {
             try {
+                // Input field navigation
                 if (e.target.classList.contains('judge-input')) {
                     if (e.key === 'Enter' || e.key === 'ArrowDown') {
                         e.preventDefault();
@@ -99,59 +172,89 @@ class PoetrySlamCalculator {
                         this.focusPreviousInput(e.target);
                     }
                 }
-            } catch (error) {
-                this.handleError('Keyboard Navigation Fehler', error);
-            }
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            try {
+                
+                // Global keyboard shortcuts
                 if (e.ctrlKey || e.metaKey) {
-                    switch(e.key) {
-                        case 'Enter':
-                            e.preventDefault();
-                            this.calculateScore();
-                            break;
-                        case 's':
-                            e.preventDefault();
-                            this.saveAndReset();
-                            break;
-                                            case 'v':
-                        e.preventDefault();
-                        this.toggleView();
-                        break;
-                    case 't':
-                        e.preventDefault();
-                        this.startTimer();
-                        break;
-                    case 'p':
-                        e.preventDefault();
-                        if (this.timerPaused) {
-                            this.resumeTimer();
-                        } else {
-                            this.pauseTimer();
-                        }
-                        break;
-                    case 's':
-                        if (!e.ctrlKey && !e.metaKey) {
-                            e.preventDefault();
-                            this.stopTimer();
-                        }
-                        break;
-                    case 'h':
-                    case 'H':
-                        e.preventDefault();
-                        this.showHelp();
-                        break;
-                    }
+                    this.handleGlobalShortcuts(e);
+                } else {
+                    this.handleSingleKeyShortcuts(e);
                 }
             } catch (error) {
-                this.handleError('Keyboard Shortcut Fehler', error);
+                this.handleError('Keyboard Event Handler Fehler', error);
             }
         });
+    }
 
-        // Touch Events für bessere Mobile-Erfahrung
+    /**
+     * Handle global keyboard shortcuts (Ctrl/Cmd + key)
+     * @param {KeyboardEvent} e - The keyboard event
+     */
+    handleGlobalShortcuts(e) {
+        switch (e.key.toLowerCase()) {
+            case 'enter':
+                e.preventDefault();
+                this.calculateScore();
+                break;
+            case 's':
+                e.preventDefault();
+                this.saveAndReset();
+                break;
+            case 'v':
+                e.preventDefault();
+                this.toggleView();
+                break;
+            case 't':
+                e.preventDefault();
+                this.startTimer();
+                break;
+            case 'p':
+                e.preventDefault();
+                if (this.timerInterval) {
+                    this.timerPaused ? this.resumeTimer() : this.pauseTimer();
+                }
+                break;
+            case 'h':
+                e.preventDefault();
+                this.showHelp();
+                break;
+        }
+    }
+
+    /**
+     * Handle single key shortcuts (when not typing in inputs)
+     * @param {KeyboardEvent} e - The keyboard event
+     */
+    handleSingleKeyShortcuts(e) {
+        // Only trigger when not typing in form controls
+        if (e.target.classList.contains('form-control')) return;
+        
+        switch (e.key.toLowerCase()) {
+            case 't':
+                e.preventDefault();
+                this.startTimer();
+                break;
+            case 'p':
+                e.preventDefault();
+                if (this.timerInterval) {
+                    this.timerPaused ? this.resumeTimer() : this.pauseTimer();
+                }
+                break;
+            case 's':
+                e.preventDefault();
+                this.stopTimer();
+                break;
+            case 'h':
+                e.preventDefault();
+                this.showHelp();
+                break;
+        }
+    }
+
+    /**
+     * Set up touch event listeners for mobile optimization
+     * Provides visual feedback for button interactions
+     */
+    setupTouchListeners() {
         document.addEventListener('touchstart', (e) => {
             try {
                 if (e.target.classList.contains('btn')) {
@@ -175,20 +278,29 @@ class PoetrySlamCalculator {
         }, { passive: true });
     }
 
+    /**
+     * Set up dark mode detection and automatic theme switching
+     * Respects system preferences and listens for changes
+     */
     setupDarkMode() {
-        // Check for system preference
+        // Check for system preference on load
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             this.setTheme('dark');
         }
         
         // Listen for system theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            // Only auto-switch if user hasn't manually set a theme
             if (!localStorage.getItem('theme')) {
                 this.setTheme(e.matches ? 'dark' : 'light');
             }
         });
     }
 
+    /**
+     * Load saved theme from localStorage and apply it
+     * Falls back to system preference if no saved theme
+     */
     loadTheme() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {
@@ -196,9 +308,13 @@ class PoetrySlamCalculator {
         }
     }
 
+    /**
+     * Load saved view preference (list/table) from localStorage
+     * Defaults to list view if no preference is saved
+     */
     loadViewPreference() {
         const savedView = localStorage.getItem('viewMode');
-        if (savedView) {
+        if (savedView && ['list', 'table'].includes(savedView)) {
             this.currentView = savedView;
         }
         this.updateView();
@@ -209,14 +325,14 @@ class PoetrySlamCalculator {
         if ('serviceWorker' in navigator) {
             try {
                 // Service Worker wird automatisch von Vite PWA registriert
-                console.log('Service Worker wird von Vite PWA Plugin verwaltet');
+                // Service Worker wird von Vite PWA Plugin verwaltet
                 
                 // Force cache refresh on app load
                 this.forceCacheRefresh();
                 
                 // Listen for service worker updates
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('Service Worker updated, reloading...');
+                    // Service Worker updated, triggering reload
                     window.location.reload();
                 });
 
@@ -239,7 +355,7 @@ class PoetrySlamCalculator {
                     cacheNames.map(cacheName => caches.delete(cacheName))
                 );
                 
-                console.log('Cache refresh triggered');
+                // Cache refresh completed successfully
             }
         } catch (error) {
             console.warn('Cache refresh failed:', error);
@@ -307,12 +423,32 @@ class PoetrySlamCalculator {
         if (themeIcon) {
             themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
         }
+        
+        // Update status bar colors for iOS
+        this.updateStatusBarColors(theme);
     }
 
     toggleTheme() {
         const currentTheme = document.documentElement.getAttribute('data-bs-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         this.setTheme(newTheme);
+    }
+
+    updateStatusBarColors(theme) {
+        const themeColorMeta = document.getElementById('themeColor');
+        const statusBarStyleMeta = document.getElementById('statusBarStyle');
+        
+        if (themeColorMeta && statusBarStyleMeta) {
+            if (theme === 'dark') {
+                // Dark theme: dark background, light text
+                themeColorMeta.setAttribute('content', '#0d1117');
+                statusBarStyleMeta.setAttribute('content', 'black-translucent');
+            } else {
+                // Light theme: light background, dark text
+                themeColorMeta.setAttribute('content', '#ffffff');
+                statusBarStyleMeta.setAttribute('content', 'default');
+            }
+        }
     }
 
     toggleView() {
@@ -381,7 +517,7 @@ class PoetrySlamCalculator {
             const offlineData = localStorage.getItem('poetrySlamOfflineData');
             if (offlineData) {
                 const data = JSON.parse(offlineData);
-                console.log('Syncing offline data:', data);
+                // Syncing offline data to server
                 
                 // Hier könnte die Synchronisation mit einem Server erfolgen
                 // await this.syncToServer(data);
@@ -999,21 +1135,21 @@ class PoetrySlamCalculator {
             toastMessage.textContent = message;
             
             // Entferne alte Klassen
-            toast.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
+            toast.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'text-white', 'text-dark');
             
-            // Füge neue Klasse hinzu
+            // Füge neue Klasse hinzu (CSS übernimmt die korrekten Farben)
             switch (type) {
                 case 'success':
-                    toast.classList.add('bg-success', 'text-white');
+                    toast.classList.add('bg-success');
                     break;
                 case 'error':
-                    toast.classList.add('bg-danger', 'text-white');
+                    toast.classList.add('bg-danger');
                     break;
                 case 'warning':
-                    toast.classList.add('bg-warning', 'text-dark');
+                    toast.classList.add('bg-warning');
                     break;
                 default:
-                    toast.classList.add('bg-info', 'text-white');
+                    toast.classList.add('bg-info');
             }
             
             // Zeige Toast
@@ -1038,12 +1174,12 @@ class PoetrySlamCalculator {
             this.handleError('Unbehandelte Promise-Ablehnung', event.reason);
         });
 
-        // Console error interceptor
-        const originalConsoleError = console.error;
-        console.error = (...args) => {
-            this.logError('Console Error', args.join(' '));
-            originalConsoleError.apply(console, args);
-        };
+        // Console error interceptor (disabled to prevent infinite recursion)
+        // const originalConsoleError = console.error;
+        // console.error = (...args) => {
+        //     this.logError('Console Error', args.join(' '));
+        //     originalConsoleError.apply(console, args);
+        // };
     }
 
     handleError(message, error) {
@@ -1073,7 +1209,8 @@ class PoetrySlamCalculator {
     }
 
     logError(message, error) {
-        console.error(`[${new Date().toISOString()}] ${message}:`, error);
+        // Use console.warn instead of console.error to avoid potential recursion
+        console.warn(`[${new Date().toISOString()}] ${message}:`, error);
     }
 
     suggestAppRestart() {
@@ -1145,7 +1282,7 @@ class PoetrySlamCalculator {
             online: navigator.onLine
         };
         
-        console.log('Debug Info:', info);
+        // Debug information logged for development
         return info;
     }
 
@@ -1395,7 +1532,7 @@ class PoetrySlamCalculator {
             }
         } catch (error) {
             // Silently fail if audio is not supported
-            console.log('Audio nicht unterstützt');
+            // Audio not supported in this browser
         }
     }
 
@@ -1416,7 +1553,7 @@ class PoetrySlamCalculator {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + duration / 1000);
         } catch (error) {
-            console.log('Beep konnte nicht abgespielt werden');
+            // Beep audio playback failed silently
         }
     }
 
@@ -1441,7 +1578,7 @@ class PoetrySlamCalculator {
             localStorage.setItem('helpUsageCount', (helpCount + 1).toString());
             
             // Could send to analytics service here
-            console.log('Help accessed', helpCount + 1, 'times');
+            // Help accessed tracking for analytics
         } catch (error) {
             // Silently fail for analytics
         }
@@ -1452,13 +1589,15 @@ class PoetrySlamCalculator {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
                 .then(registration => {
-                    console.log('Service Worker registriert:', registration);
+                    // Service Worker successfully registered
                 })
                 .catch(error => {
-                    console.log('Service Worker Registrierung fehlgeschlagen:', error);
+                    // Service Worker registration failed silently
                 });
         }
     }
+
+
 }
 
 // Initialisiere die App
@@ -1485,17 +1624,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Install-Prompt für PWA
-let deferredPrompt;
-
+// PWA Install Prompt Management
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
-    deferredPrompt = e;
+    window.deferredPrompt = e;
     
-    // Optional: Zeige Install-Button
-    if (deferredPrompt) {
-        // Hier könnte ein Install-Button angezeigt werden
-        console.log('PWA kann installiert werden');
+    // Show install button when prompt is available
+    const installButton = document.getElementById('installApp');
+    if (installButton) {
+        installButton.style.display = 'inline-block';
+    }
+});
+
+// Handle install button click
+document.addEventListener('DOMContentLoaded', () => {
+    const installButton = document.getElementById('installApp');
+    if (installButton) {
+        installButton.addEventListener('click', (e) => {
+            // Ensure this is called directly from user gesture
+            if (calculator && window.deferredPrompt) {
+                try {
+                    // Call prompt directly from the click handler
+                    window.deferredPrompt.prompt();
+                    
+                    // Handle the user choice asynchronously
+                    window.deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            calculator.showNotification('App wird installiert...', 'success');
+                        } else {
+                            calculator.showNotification('Installation abgebrochen', 'info');
+                        }
+                        
+                        // Clear the deferredPrompt
+                        window.deferredPrompt = null;
+                        
+                        // Hide the install button
+                        installButton.style.display = 'none';
+                    }).catch((error) => {
+                        calculator.handleError('Install prompt error', error);
+                    });
+                    
+                } catch (error) {
+                    calculator.handleError('Install prompt error', error);
+                }
+            }
+        });
     }
 });
 
@@ -1526,5 +1699,5 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
         }
     };
     
-    console.log('Debug-Funktionen verfügbar: debugApp(), exportErrors(), clearErrors()');
+    // Debug functions available in development mode only
 }
