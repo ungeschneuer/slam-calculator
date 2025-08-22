@@ -107,7 +107,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        cacheId: 'poetry-slam-calculator-v1.3.1',
+        cacheId: `poetry-slam-calculator-v1.3.1-${Date.now()}`,
         navigateFallback: process.env.NODE_ENV === 'production' ? '/slam-calculator/index.html' : '/index.html',
         navigateFallbackAllowlist: [/^(?!\/__).*/],
         runtimeCaching: [
@@ -190,6 +190,11 @@ export default defineConfig({
   preview: {
     port: 4173,
     open: true,
-    host: true
+    host: true,
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
   }
 });
