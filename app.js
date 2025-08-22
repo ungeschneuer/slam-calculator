@@ -91,6 +91,7 @@ class PoetrySlamCalculator {
             
             // Setup PWA features
             this.registerServiceWorker();
+            this.setupPWAViewport();
         } catch (error) {
             this.handleError('Initialisierung fehlgeschlagen', error);
         }
@@ -1587,6 +1588,37 @@ class PoetrySlamCalculator {
             // Help accessed tracking for analytics
         } catch (error) {
             // Silently fail for analytics
+        }
+    }
+
+    /**
+     * Setup PWA viewport for iPhone notch
+     * Dynamically adjusts padding for safe area insets
+     */
+    setupPWAViewport() {
+        try {
+            // Check if running in PWA mode
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                // Check if on iOS device
+                if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                    // Get safe area inset
+                    const safeAreaTop = getComputedStyle(document.documentElement)
+                        .getPropertyValue('--sat') || '44px';
+                    
+                    // Apply dynamic padding
+                    document.body.style.paddingTop = safeAreaTop;
+                    
+                    // Add additional header padding
+                    const header = document.querySelector('header');
+                    if (header) {
+                        header.style.paddingTop = '1.5rem';
+                    }
+                    
+                    console.log('PWA viewport adjusted for iPhone notch');
+                }
+            }
+        } catch (error) {
+            this.handleError('PWA viewport setup failed', error);
         }
     }
 

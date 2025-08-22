@@ -17,6 +17,7 @@
     --input-border: #ced4da;
     --shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     --transition-speed: 0.15s;
+    --sat: env(safe-area-inset-top, 44px);
 }
 
 [data-bs-theme="dark"] {
@@ -148,26 +149,20 @@ input[type="number"]::-webkit-inner-spin-button {
         -webkit-overflow-scrolling: touch;
     }
     
-    /* PWA Notch Abstand für iPhone */
-    @media screen and (display-mode: standalone) {
-        .container-fluid {
-            padding-top: env(safe-area-inset-top, 44px);
+                /* PWA Notch Abstand für iPhone */
+        @media screen and (display-mode: standalone) {
+            body {
+                padding-top: var(--sat);
+            }
+            
+            .container-fluid {
+                padding-top: 0;
+            }
+            
+            header {
+                padding-top: 1.5rem;
+            }
         }
-        
-            /* Alternative für ältere iOS Versionen */
-    @supports not (padding-top: env(safe-area-inset-top)) {
-        .container-fluid {
-            padding-top: 44px;
-        }
-    }
-    
-    /* Zusätzlicher Header-Abstand für PWA */
-    @media screen and (display-mode: standalone) {
-        header {
-            padding-top: 0.5rem;
-        }
-    }
-    }
     
     .judge-input {
         font-size: 16px; /* Verhindert Zoom auf iOS */
