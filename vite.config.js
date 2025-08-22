@@ -108,6 +108,8 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cacheId: 'poetry-slam-calculator-v1.3.0',
+        navigateFallback: process.env.NODE_ENV === 'production' ? '/slam-calculator/index.html' : '/index.html',
+        navigateFallbackAllowlist: [/^(?!\/__).*/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -133,35 +135,35 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',
-        scope: '/',
-        start_url: '/',
+        scope: process.env.NODE_ENV === 'production' ? '/slam-calculator/' : '/',
+        start_url: process.env.NODE_ENV === 'production' ? '/slam-calculator/' : '/',
         icons: [
           {
-            src: 'assets/icons/icon-72x72.png',
+            src: process.env.NODE_ENV === 'production' ? '/slam-calculator/assets/icons/icon-72x72.png' : 'assets/icons/icon-72x72.png',
             sizes: '72x72',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'assets/icons/icon-96x96.png',
+            src: process.env.NODE_ENV === 'production' ? '/slam-calculator/assets/icons/icon-96x96.png' : 'assets/icons/icon-96x96.png',
             sizes: '96x96',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'assets/icons/icon-144x144.png',
+            src: process.env.NODE_ENV === 'production' ? '/slam-calculator/assets/icons/icon-144x144.png' : 'assets/icons/icon-144x144.png',
             sizes: '144x144',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'assets/icons/icon-192x192.png',
+            src: process.env.NODE_ENV === 'production' ? '/slam-calculator/assets/icons/icon-192x192.png' : 'assets/icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'assets/icons/icon-512x512.png',
+            src: process.env.NODE_ENV === 'production' ? '/slam-calculator/assets/icons/icon-512x512.png' : 'assets/icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
