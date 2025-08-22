@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "preview:fresh": "npm run clean && npm run build && vite preview",
     "build:pages": "NODE_ENV=production vite build",
     "clean": "rm -rf dist",
     "deploy": "npm run build:pages && echo 'Build completed. Push to main branch to deploy.'"
