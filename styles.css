@@ -132,6 +132,18 @@ input[type="number"]::-webkit-inner-spin-button {
 
 /* iOS-spezifische Optimierungen */
 @supports (-webkit-touch-callout: none) {
+    body {
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
     .judge-input {
         font-size: 16px; /* Verhindert Zoom auf iOS */
         padding: 0.5rem 0.75rem;
@@ -139,6 +151,24 @@ input[type="number"]::-webkit-inner-spin-button {
     
     .form-control:focus {
         transform: none; /* Verhindert ungewollte Transformationen auf iOS */
+    }
+    
+    /* Prevent zoom on all inputs */
+    input, textarea, select {
+        font-size: 16px !important;
+        -webkit-appearance: none;
+        border-radius: 0;
+    }
+    
+    /* Disable text selection for better app feel */
+    .btn, .card, .form-control {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    
+    /* Smooth scrolling */
+    html {
+        -webkit-overflow-scrolling: touch;
     }
 }
 
@@ -517,6 +547,16 @@ footer a:hover {
         padding: 0.2rem 0.4rem;
         font-size: 0.75rem;
     }
+}
+
+/* Prevent unwanted touch gestures */
+* {
+    touch-action: manipulation;
+}
+
+/* Disable double-tap zoom */
+html {
+    touch-action: manipulation;
 }
 
 /* Extra small screens (iPhone SE, etc.) */
