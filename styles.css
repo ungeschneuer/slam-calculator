@@ -137,9 +137,11 @@ input[type="number"]::-webkit-inner-spin-button {
         -webkit-touch-callout: none;
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior: none;
-        position: fixed;
-        width: 100%;
-        height: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .container-fluid {
+        min-height: 100vh;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
