@@ -148,6 +148,27 @@ input[type="number"]::-webkit-inner-spin-button {
         -webkit-overflow-scrolling: touch;
     }
     
+    /* PWA Notch Abstand für iPhone */
+    @media screen and (display-mode: standalone) {
+        .container-fluid {
+            padding-top: env(safe-area-inset-top, 44px);
+        }
+        
+            /* Alternative für ältere iOS Versionen */
+    @supports not (padding-top: env(safe-area-inset-top)) {
+        .container-fluid {
+            padding-top: 44px;
+        }
+    }
+    
+    /* Zusätzlicher Header-Abstand für PWA */
+    @media screen and (display-mode: standalone) {
+        header {
+            padding-top: 0.5rem;
+        }
+    }
+    }
+    
     .judge-input {
         font-size: 16px; /* Verhindert Zoom auf iOS */
         padding: 0.5rem 0.75rem;
