@@ -8,7 +8,7 @@ class PoetrySlamCalculator {
         this.currentResult = null;
         this.currentView = 'list'; // 'list' oder 'table'
         this.autoSaveTimeout = null;
-        this.autoSaveDelay = 2000; // 2 Sekunden
+        this.autoSaveDelay = 1000; // 1 Sekunde
         this.errorCount = 0;
         this.maxErrors = 5;
         this.errorLog = [];
@@ -208,23 +208,13 @@ class PoetrySlamCalculator {
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
-                const basePath = window.location.pathname.includes('/slam-calculator/') ? '/slam-calculator' : '';
                 // Service Worker wird automatisch von Vite PWA registriert
                 console.log('Service Worker wird von Vite PWA Plugin verwaltet');
-                return;
-                console.log('Service Worker registered successfully:', registration);
-
-                // Check for updates
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            this.showUpdateNotification();
-                        }
-                    });
-                });
-
-                // Handle service worker updates
+                
+                // Force cache refresh on app load
+                this.forceCacheRefresh();
+                
+                // Listen for service worker updates
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
                     console.log('Service Worker updated, reloading...');
                     window.location.reload();
@@ -233,6 +223,53 @@ class PoetrySlamCalculator {
             } catch (error) {
                 console.error('Service Worker registration failed:', error);
             }
+        }
+    }
+
+    // Force cache refresh for PWA updates
+    async forceCacheRefresh() {
+        try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                // Send message to service worker to skip waiting
+                navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                
+                // Clear all caches
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames.map(cacheName => caches.delete(cacheName))
+                );
+                
+                console.log('Cache refresh triggered');
+            }
+        } catch (error) {
+            console.warn('Cache refresh failed:', error);
+        }
+    }
+
+    // Manual refresh function for users
+    async forceRefresh() {
+        try {
+            this.showNotification('Aktualisiere App...', 'info');
+            
+            // Clear all caches
+            const cacheNames = await caches.keys();
+            await Promise.all(
+                cacheNames.map(cacheName => caches.delete(cacheName))
+            );
+            
+            // Force service worker update
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+            }
+            
+            // Reload the page
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Force refresh failed:', error);
+            this.showNotification('Aktualisierung fehlgeschlagen', 'error');
         }
     }
 
