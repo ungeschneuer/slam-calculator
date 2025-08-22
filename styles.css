@@ -138,11 +138,13 @@ input[type="number"]::-webkit-inner-spin-button {
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior: none;
         -webkit-overflow-scrolling: touch;
+        overflow-x: hidden;
     }
     
     .container-fluid {
         min-height: 100vh;
         overflow-y: auto;
+        overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
     }
     
@@ -556,9 +558,14 @@ footer a:hover {
     touch-action: manipulation;
 }
 
-/* Disable double-tap zoom */
+/* Disable double-tap zoom and horizontal scrolling */
 html {
     touch-action: manipulation;
+    overflow-x: hidden;
+}
+
+body {
+    overflow-x: hidden;
 }
 
 /* Extra small screens (iPhone SE, etc.) */
