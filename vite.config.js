@@ -70,6 +70,33 @@ export default defineConfig({
           fileName: 'styles.css',
           source: require('fs').readFileSync('styles.css')
         });
+        
+        // Kopiere PWA Icons
+        this.emitFile({
+          type: 'asset',
+          fileName: 'assets/icons/icon-72x72.png',
+          source: require('fs').readFileSync('assets/icons/icon-72x72.png')
+        });
+        this.emitFile({
+          type: 'asset',
+          fileName: 'assets/icons/icon-96x96.png',
+          source: require('fs').readFileSync('assets/icons/icon-96x96.png')
+        });
+        this.emitFile({
+          type: 'asset',
+          fileName: 'assets/icons/icon-144x144.png',
+          source: require('fs').readFileSync('assets/icons/icon-144x144.png')
+        });
+        this.emitFile({
+          type: 'asset',
+          fileName: 'assets/icons/icon-192x192.png',
+          source: require('fs').readFileSync('assets/icons/icon-192x192.png')
+        });
+        this.emitFile({
+          type: 'asset',
+          fileName: 'assets/icons/icon-512x512.png',
+          source: require('fs').readFileSync('assets/icons/icon-512x512.png')
+        });
       }
     },
     VitePWA({
@@ -107,7 +134,39 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait-primary',
         scope: '/',
-        start_url: '/'
+        start_url: '/',
+        icons: [
+          {
+            src: 'assets/icons/icon-72x72.png',
+            sizes: '72x72',
+            type: 'image/png',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'assets/icons/icon-96x96.png',
+            sizes: '96x96',
+            type: 'image/png',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'assets/icons/icon-144x144.png',
+            sizes: '144x144',
+            type: 'image/png',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'assets/icons/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'assets/icons/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
       }
     }),
     viteCompression({
