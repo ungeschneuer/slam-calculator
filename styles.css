@@ -1292,3 +1292,42 @@ kbd {
         font-size: 0.9rem;
     }
 }
+
+/* Android Numeric Keypad Fix */
+@supports (-webkit-touch-callout: none) {
+    /* iOS specific styles */
+    .judge-input {
+        font-size: 16px !important;
+        transform: none !important;
+    }
+}
+
+/* Android specific styles */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    .judge-input {
+        -webkit-appearance: none;
+        -moz-appearance: textfield;
+    }
+    
+    .judge-input::-webkit-outer-spin-button,
+    .judge-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+}
+
+/* Force numeric keypad on Android */
+.judge-input[inputmode="numeric"] {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Android Chrome specific fixes */
+@media screen and (max-width: 768px) {
+    .judge-input {
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+    }
+}
