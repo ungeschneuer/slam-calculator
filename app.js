@@ -1681,43 +1681,35 @@ class PoetrySlamCalculator {
     }
 
     /**
-     * Setup development timestamp display
-     * Shows last updated time in development mode only
+     * Setup build timestamp display
+     * Shows last updated time for both development and production builds
      */
     setupDevTimestamp() {
         try {
-            // Check if running in development mode (localhost or dev server)
-            const isDev = window.location.hostname === 'localhost' || 
-                         window.location.hostname === '127.0.0.1' ||
-                         window.location.hostname.includes('192.168.') ||
-                         window.location.port === '3000';
+            const devTimestamp = document.getElementById('devTimestamp');
+            const lastUpdated = document.getElementById('lastUpdated');
             
-            if (isDev) {
-                const devTimestamp = document.getElementById('devTimestamp');
-                const lastUpdated = document.getElementById('lastUpdated');
+            if (devTimestamp && lastUpdated) {
+                // Show the timestamp element for both development and production
+                devTimestamp.style.display = 'block';
                 
-                if (devTimestamp && lastUpdated) {
-                    // Show the timestamp element
-                    devTimestamp.style.display = 'block';
-                    
-                    // Set current timestamp
-                    const now = new Date();
-                    const timestamp = now.toLocaleString('de-DE', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    });
-                    
-                    lastUpdated.textContent = `Letztes Update: ${timestamp}`;
-                    
-                    console.log('Development timestamp displayed');
-                }
+                // Set current timestamp
+                const now = new Date();
+                const timestamp = now.toLocaleString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                
+                lastUpdated.textContent = `Letztes Update: ${timestamp}`;
+                
+                console.log('Build timestamp displayed');
             }
         } catch (error) {
-            this.handleError('Development timestamp setup failed', error);
+            this.handleError('Build timestamp setup failed', error);
         }
     }
 

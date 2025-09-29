@@ -190,6 +190,10 @@ export default defineConfig({
     open: true,
     sourcemapIgnoreList: (sourcePath, sourcemapPath) => {
       return sourcePath.includes('bootstrap') || sourcePath.includes('installHook');
+    },
+    headers: {
+      'Cache-Control': 'public, max-age=300, must-revalidate',
+      'Vary': 'Accept-Encoding'
     }
   },
   preview: {
@@ -197,9 +201,8 @@ export default defineConfig({
     open: true,
     host: true,
     headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
+      'Cache-Control': 'public, max-age=300, must-revalidate',
+      'Vary': 'Accept-Encoding'
     }
   }
 });
