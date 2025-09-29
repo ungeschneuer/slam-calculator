@@ -605,8 +605,7 @@ class PoetrySlamCalculator {
                                step="0.1"
                                min="1.0"
                                max="10.0"
-                               inputmode="numeric"
-                               pattern="[0-9]*[.,]?[0-9]+"
+                               inputmode="decimal"
                                autocomplete="off"
                                autocorrect="off"
                                autocapitalize="off"
@@ -624,9 +623,6 @@ class PoetrySlamCalculator {
 
         // Restore auto-saved data if available
         this.restoreAutoSaveData();
-        
-        // Force numeric keypad on Android
-        this.forceNumericKeypad();
     }
 
     restoreAutoSaveData() {
@@ -662,49 +658,6 @@ class PoetrySlamCalculator {
         }
     }
 
-    /**
-     * Force numeric keypad on Android devices
-     * Android browsers often ignore inputmode="numeric" so we need additional measures
-     */
-    forceNumericKeypad() {
-        try {
-            // Check if we're on Android
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            if (!isAndroid) return;
-
-            // Get all judge input fields
-            const judgeInputs = document.querySelectorAll('.judge-input');
-            
-            judgeInputs.forEach(input => {
-                // Add focus event listener to force numeric keypad
-                input.addEventListener('focus', () => {
-                    try {
-                        // Force numeric input mode
-                        input.setAttribute('inputmode', 'numeric');
-                        input.setAttribute('type', 'tel'); // tel type often shows numeric keypad
-                        
-                        // Small delay then change back to number
-                        setTimeout(() => {
-                            input.setAttribute('type', 'number');
-                        }, 100);
-                    } catch (error) {
-                        // Silently fail if attributes can't be set
-                    }
-                });
-
-                // Add touch event listener for better Android support
-                input.addEventListener('touchstart', () => {
-                    try {
-                        input.setAttribute('inputmode', 'numeric');
-                    } catch (error) {
-                        // Silently fail
-                    }
-                }, { passive: true });
-            });
-        } catch (error) {
-            this.handleError('Fehler beim Erzwingen des numerischen Keypads', error);
-        }
-    }
 
     addJudge() {
         if (this.currentJudgeCount < this.maxJudges) {

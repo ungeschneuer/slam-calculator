@@ -1293,41 +1293,15 @@ kbd {
     }
 }
 
-/* Android Numeric Keypad Fix */
-@supports (-webkit-touch-callout: none) {
-    /* iOS specific styles */
-    .judge-input {
-        font-size: 16px !important;
-        transform: none !important;
-    }
+/* Standard numeric input styling */
+.judge-input {
+    font-size: 16px; /* Prevents zoom on mobile */
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
 }
 
-/* Android specific styles */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-    .judge-input {
-        -webkit-appearance: none;
-        -moz-appearance: textfield;
-    }
-    
-    .judge-input::-webkit-outer-spin-button,
-    .judge-input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-}
-
-/* Force numeric keypad on Android */
-.judge-input[inputmode="numeric"] {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-/* Android Chrome specific fixes */
-@media screen and (max-width: 768px) {
-    .judge-input {
-        font-size: 16px;
-        -webkit-text-size-adjust: 100%;
-    }
+.judge-input::-webkit-outer-spin-button,
+.judge-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
