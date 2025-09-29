@@ -102,17 +102,22 @@ export default defineConfig({
       }
     },
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      // 🏆 Gold Standard: Disable PWA in dev/preview for zero caching
+      disable: process.env.NODE_ENV !== 'production',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Gold Standard PWA Configuration
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
         globDirectory: 'dist',
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
+        skipWaiting: false, // Let user control updates
         clientsClaim: true,
         cacheId: `poetry-slam-calculator-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         navigateFallback: process.env.NODE_ENV === 'production' ? '/slam-calculator/index.html' : '/index.html',
         navigateFallbackAllowlist: [/^(?!\/__).*/],
+        navigateFallbackDenylist: [/^\/.*\.html$/],
         runtimeCaching: [
+          // Google Fonts - Cache First with long expiration
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -121,6 +126,84 @@ export default defineConfig({
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // HTML files - Network First (never cache)
+          {
+            urlPattern: /\.html$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-cache',
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 0
+              },
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Manifest - Network First (never cache)
+          {
+            urlPattern: /manifest\.webmanifest$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'manifest-cache',
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 0
+              },
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Version files - Network First (never cache)
+          {
+            urlPattern: /version\.json$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'version-cache',
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 0
+              },
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Static assets - Cache First with long expiration
+          {
+            urlPattern: /\.(js|css|woff2?|ttf|eot)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-assets-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          // Images - Cache First with medium expiration
+          {
+            urlPattern: /\.(png|jpg|jpeg|gif|svg|ico|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               },
               cacheableResponse: {
                 statuses: [0, 200]
@@ -191,18 +274,28 @@ export default defineConfig({
     sourcemapIgnoreList: (sourcePath, sourcemapPath) => {
       return sourcePath.includes('bootstrap') || sourcePath.includes('installHook');
     },
+    // 🏆 Gold Standard: NO CACHING in development
     headers: {
-      'Cache-Control': 'public, max-age=300, must-revalidate',
-      'Vary': 'Accept-Encoding'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'ETag': '',
+      'Last-Modified': 'Thu, 01 Jan 1970 00:00:00 GMT'
     }
   },
   preview: {
     port: 4173,
     open: true,
     host: true,
+    // 🏆 Gold Standard: NO CACHING in preview
     headers: {
-      'Cache-Control': 'public, max-age=300, must-revalidate',
-      'Vary': 'Accept-Encoding'
-    }
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'ETag': '',
+      'Last-Modified': 'Thu, 01 Jan 1970 00:00:00 GMT'
+    },
+    // Force no caching for all routes
+    cors: true
   }
 });

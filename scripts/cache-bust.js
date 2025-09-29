@@ -1,101 +1,131 @@
 #!/usr/bin/env node
 
 /**
- * Cache Busting Script for PWA Deployment
- * Forces all caches to be cleared on every deployment
- * Works for development, preview, and production
+ * Gold Standard PWA Cache Busting Script
+ * Implements industry best practices for cache invalidation
  */
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const PWAVersionManager = require('./version-manager.js');
 
 // Check if we're in development/preview mode
 const isDev = process.argv.includes('--dev');
 const isPreview = process.argv.includes('--preview');
 const isProduction = process.env.NODE_ENV === 'production' && !isDev && !isPreview;
 
-console.log(`🔄 Starting cache busting process... (${isDev ? 'development' : isPreview ? 'preview' : isProduction ? 'production' : 'development'} mode)`);
+console.log(`🏆 Starting Gold Standard PWA cache busting... (${isDev ? 'development' : isPreview ? 'preview' : isProduction ? 'production' : 'development'} mode)`);
 
-// Generate unique cache busting identifier
-const timestamp = Date.now();
-const randomId = crypto.randomBytes(8).toString('hex');
-const cacheBustId = `${timestamp}-${randomId}`;
+// Initialize version manager
+const versionManager = new PWAVersionManager();
+const versionInfo = versionManager.updateVersion();
+versionManager.updateManifest(versionInfo);
+versionManager.createVersionInfo(versionInfo);
 
-console.log(`📝 Generated cache bust ID: ${cacheBustId}`);
+console.log(`📦 Gold Standard Version: ${versionInfo.version}`);
+console.log(`🔑 Build ID: ${versionInfo.buildId}`);
+console.log(`🏷️ Hash: ${versionInfo.hash}`);
 
-// Update service worker with new cache ID (only for production)
-if (isProduction) {
-  const swPath = path.join(__dirname, '../dist/sw.js');
-  if (fs.existsSync(swPath)) {
-    let swContent = fs.readFileSync(swPath, 'utf8');
-    
-    // Replace cache ID in service worker
-    swContent = swContent.replace(
-      /cacheId:\s*['"`][^'"`]*['"`]/g,
-      `cacheId: 'poetry-slam-calculator-${cacheBustId}'`
-    );
-    
-    // Add cache versioning
-    swContent = swContent.replace(
-      /const\s+CACHE_NAME\s*=\s*['"`][^'"`]*['"`]/g,
-      `const CACHE_NAME = 'poetry-slam-calculator-${cacheBustId}'`
-    );
-    
-    fs.writeFileSync(swPath, swContent);
-    console.log('✅ Updated service worker cache ID');
-  }
+// Update service worker with new cache ID (all modes)
+const swPath = path.join(__dirname, '../dist/sw.js');
+if (fs.existsSync(swPath)) {
+  let swContent = fs.readFileSync(swPath, 'utf8');
+  
+  // Replace cache ID in service worker
+  swContent = swContent.replace(
+    /cacheId:\s*['"`][^'"`]*['"`]/g,
+    `cacheId: 'poetry-slam-calculator-${versionInfo.hash}'`
+  );
+  
+  // Add cache versioning
+  swContent = swContent.replace(
+    /const\s+CACHE_NAME\s*=\s*['"`][^'"`]*['"`]/g,
+    `const CACHE_NAME = 'poetry-slam-calculator-${versionInfo.hash}'`
+  );
+  
+  fs.writeFileSync(swPath, swContent);
+  console.log('✅ Updated service worker cache ID');
 } else {
-  console.log(`⏭️ Skipping service worker update (${isDev ? 'development' : isPreview ? 'preview' : 'development'} mode)`);
+  console.log('⚠️ Service worker not found - skipping update');
 }
 
-// Update manifest with new version (only for production)
-if (isProduction) {
-  const manifestPath = path.join(__dirname, '../dist/manifest.webmanifest');
-  if (fs.existsSync(manifestPath)) {
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    manifest.version = cacheBustId;
-    manifest.name = `Poetry Slam Rechner v${cacheBustId}`;
-    manifest.short_name = `Slam Rechner v${cacheBustId.slice(-8)}`;
-    
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-    console.log('✅ Updated manifest version');
-  }
+// Update manifest with new version (all modes)
+const manifestPath = path.join(__dirname, '../dist/manifest.webmanifest');
+if (fs.existsSync(manifestPath)) {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  manifest.version = versionInfo.version;
+  manifest.name = `Poetry Slam Rechner v${versionInfo.hash}`;
+  manifest.short_name = `Slam Rechner v${versionInfo.hash}`;
+  
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+  console.log('✅ Updated manifest version');
 } else {
-  console.log(`⏭️ Skipping manifest update (${isDev ? 'development' : isPreview ? 'preview' : 'development'} mode)`);
+  console.log('⚠️ Manifest not found - skipping update');
 }
 
 // Create cache-bust meta file
 const metaPath = path.join(__dirname, '../dist/cache-bust.json');
 const metaData = {
-  version: cacheBustId,
-  timestamp: timestamp,
-  buildId: randomId,
+  version: versionInfo.version,
+  build: versionInfo.build,
+  buildId: versionInfo.buildId,
+  hash: versionInfo.hash,
+  timestamp: versionInfo.timestamp,
   deployed: new Date().toISOString(),
-  cacheStrategy: 'aggressive'
+  cacheStrategy: 'gold-standard'
 };
 
 fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 2));
-console.log('✅ Created cache-bust metadata');
+console.log('✅ Created Gold Standard cache metadata');
 
-// Update HTML with cache-busting meta tags and query parameters
+// Update HTML with Gold Standard PWA version injection
 const indexPath = path.join(__dirname, '../dist/index.html');
 if (fs.existsSync(indexPath)) {
   let htmlContent = fs.readFileSync(indexPath, 'utf8');
   
-  // Standard cache control meta tags (elegant approach)
-  const cacheBustMeta = `
-    <meta name="cache-bust" content="${cacheBustId}">
-    <meta name="build-timestamp" content="${timestamp}">
-    <meta name="deploy-version" content="${randomId}">
-  `;
+  if (isDev || isPreview) {
+    // 🏆 Gold Standard: Dev/Preview - NO CACHING
+    const devScript = `
+    <script>
+      // 🏆 Gold Standard: Development Mode - NO CACHING
+      window.VERSION_INFO = {
+        version: '${versionInfo.version}',
+        build: ${versionInfo.build},
+        buildId: '${versionInfo.buildId}',
+        hash: '${versionInfo.hash}',
+        timestamp: '${versionInfo.timestamp}',
+        mode: '${isDev ? 'development' : 'preview'}',
+        caching: 'DISABLED'
+      };
+      self.VERSION_INFO = window.VERSION_INFO;
+      
+      // Force no caching in dev/preview
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          names.forEach(name => caches.delete(name));
+        });
+      }
+    </script>
+    `;
+    
+    htmlContent = htmlContent.replace('</head>', `${devScript}\n  </head>`);
+    console.log('✅ Updated HTML with NO-CACHE development mode');
+  } else {
+    // Production - Gold Standard PWA version injection
+    const versionScript = `
+    <script>
+      // Gold Standard PWA Version Info
+      window.VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)};
+      self.VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)};
+    </script>
+    `;
+    
+    htmlContent = htmlContent.replace('</head>', `${versionScript}\n  </head>`);
+    console.log('✅ Updated HTML with Gold Standard PWA version injection');
+  }
   
-  // Insert before closing head tag
-  htmlContent = htmlContent.replace('</head>', `${cacheBustMeta}\n  </head>`);
-  
-  // Standard approach: Let Vite handle filename versioning, we just update the HTML
   fs.writeFileSync(indexPath, htmlContent);
-  console.log('✅ Updated HTML with cache-busting meta tags and timestamped filename');
 }
 
 // Create .htaccess for Apache servers (only for production)
@@ -152,6 +182,8 @@ if (isProduction) {
 
 // Server-side cache busting only - no JavaScript required
 
-console.log('🎉 Cache busting completed successfully!');
-console.log(`📊 Cache Bust ID: ${cacheBustId}`);
-console.log('🚀 Ready for deployment with aggressive cache busting!');
+console.log('🎉 Gold Standard PWA cache busting completed successfully!');
+console.log(`📊 Version: ${versionInfo.version}`);
+console.log(`🔑 Build ID: ${versionInfo.buildId}`);
+console.log(`🏷️ Hash: ${versionInfo.hash}`);
+console.log('🚀 Ready for deployment with Gold Standard PWA caching!');

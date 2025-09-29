@@ -365,17 +365,29 @@ class PoetrySlamCalculator {
     // Force cache refresh for PWA updates
     async forceCacheRefresh() {
         try {
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                // Send message to service worker to skip waiting
-                navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-                
-                // Clear all caches
+            if ('serviceWorker' in navigator) {
+                // Clear all caches first
                 const cacheNames = await caches.keys();
                 await Promise.all(
                     cacheNames.map(cacheName => caches.delete(cacheName))
                 );
                 
+                // Force service worker update
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    await registration.update();
+                    // Force skip waiting
+                    if (registration.waiting) {
+                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                }
+                
+                // Clear localStorage cache markers
+                localStorage.removeItem('app-version');
+                localStorage.removeItem('poetry-slam-cache-version');
+                
                 // Cache refresh completed successfully
+                console.log('Cache cleared successfully');
             }
         } catch (error) {
             console.warn('Cache refresh failed:', error);
