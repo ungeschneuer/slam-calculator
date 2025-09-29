@@ -92,6 +92,9 @@ class PoetrySlamCalculator {
             // Setup PWA features
             this.registerServiceWorker();
             this.setupPWAViewport();
+            
+            // Setup development timestamp
+            this.setupDevTimestamp();
         } catch (error) {
             this.handleError('Initialisierung fehlgeschlagen', error);
         }
@@ -144,7 +147,11 @@ class PoetrySlamCalculator {
         document.addEventListener('input', (e) => {
             try {
                 if (e.target.classList.contains('judge-input')) {
+                    // Sofortige Eingabe-Normalisierung für Android
+                    this.normalizeInput(e.target);
+                    // Step 3: Add limitDecimalPlaces to input event
                     this.limitDecimalPlaces(e.target);
+                    // Step 2: Add validation on input (but not limitDecimalPlaces)
                     this.validateInput(e.target);
                     this.triggerAutoSave(e.target);
                 } else if (e.target.id === 'participantName') {
@@ -152,6 +159,18 @@ class PoetrySlamCalculator {
                 }
             } catch (error) {
                 this.handleError('Input Event Handler Fehler', error);
+            }
+        });
+
+        // Step 1: Add validation only on blur (when user leaves the field)
+        document.addEventListener('blur', (e) => {
+            try {
+                if (e.target.classList.contains('judge-input')) {
+                    this.limitDecimalPlaces(e.target);
+                    this.validateInput(e.target);
+                }
+            } catch (error) {
+                this.handleError('Blur Event Handler Fehler', error);
             }
         });
     }
@@ -597,15 +616,13 @@ class PoetrySlamCalculator {
                 <div class="form-group">
                     <label for="judge${i + 1}" class="form-label small mb-1">Juror*in ${i + 1}</label>
                     <div class="input-group input-group-sm">
-                        <input type="number" 
+                        <input type="text" 
                                class="form-control form-control-sm judge-input" 
                                id="judge${i + 1}" 
-                               placeholder="1,0-10,0"
+                               placeholder="1,0-10,0 (oder 1.0-10.0)"
                                data-judge-id="${i + 1}"
-                               step="0.1"
-                               min="1.0"
-                               max="10.0"
                                inputmode="decimal"
+                               pattern="[0-9]*[.,]?[0-9]*"
                                autocomplete="off"
                                autocorrect="off"
                                autocapitalize="off"
@@ -683,19 +700,59 @@ class PoetrySlamCalculator {
         document.getElementById('judgeCount').textContent = this.currentJudgeCount;
     }
 
-    limitDecimalPlaces(input) {
-        const value = input.value.replace(',', '.');
+    /**
+     * Normalize input for Android compatibility
+     * Handles both comma and dot as decimal separators
+     */
+    normalizeInput(input) {
+        // Erlaube nur Zahlen, Komma und Punkt
+        const cleanValue = input.value.replace(/[^0-9,.]/g, '');
+        if (cleanValue !== input.value) {
+            input.value = cleanValue;
+        }
         
-        // Begrenze auf eine Nachkommastelle
-        if (value.includes('.')) {
-            const parts = value.split('.');
-            if (parts[1].length > 1) {
-                input.value = parts[0] + '.' + parts[1].substring(0, 1);
+        // Verhindere mehr als ein Dezimaltrennzeichen
+        const commaCount = (input.value.match(/,/g) || []).length;
+        const dotCount = (input.value.match(/\./g) || []).length;
+        
+        if (commaCount + dotCount > 1) {
+            // Behalte nur das erste Dezimaltrennzeichen
+            const firstComma = input.value.indexOf(',');
+            const firstDot = input.value.indexOf('.');
+            
+            if (firstComma !== -1 && firstDot !== -1) {
+                if (firstComma < firstDot) {
+                    input.value = input.value.replace(/\./g, '');
+                } else {
+                    input.value = input.value.replace(/,/g, '');
+                }
             }
         }
     }
 
+    limitDecimalPlaces(input) {
+        // Normalisiere für die Verarbeitung
+        const normalizedValue = input.value.replace(',', '.');
+        
+        // Begrenze auf eine Nachkommastelle
+        if (normalizedValue.includes('.')) {
+            const parts = normalizedValue.split('.');
+            if (parts[1].length > 1) {
+                // Behalte das ursprüngliche Dezimaltrennzeichen (Komma oder Punkt)
+                const originalDecimal = input.value.includes(',') ? ',' : '.';
+                input.value = parts[0] + originalDecimal + parts[1].substring(0, 1);
+            }
+        }
+        
+        // Zusätzlich: Erlaube nur Zahlen, Komma und Punkt
+        const cleanValue = input.value.replace(/[^0-9,.]/g, '');
+        if (cleanValue !== input.value) {
+            input.value = cleanValue;
+        }
+    }
+
     validateInput(input) {
+        // Normalisiere Komma zu Punkt für die Validierung
         const value = input.value.replace(',', '.');
         const numValue = parseFloat(value);
         
@@ -705,7 +762,7 @@ class PoetrySlamCalculator {
             return false;
         }
         
-        // Prüfe auf mehr als eine Nachkommastelle
+        // Prüfe auf mehr als eine Nachkommastelle (nach Normalisierung)
         if (value.includes('.') && value.split('.')[1].length > 1) {
             input.classList.add('is-invalid');
             const feedback = document.getElementById(`feedback${input.dataset.judgeId}`);
@@ -719,7 +776,7 @@ class PoetrySlamCalculator {
             input.classList.add('is-invalid');
             const feedback = document.getElementById(`feedback${input.dataset.judgeId}`);
             if (feedback) {
-                feedback.textContent = '1,0 - 10,0';
+                feedback.textContent = '1,0 - 10,0 (Komma oder Punkt)';
             }
             return false;
         }
@@ -773,10 +830,7 @@ class PoetrySlamCalculator {
                 return null; // Nicht alle Felder ausgefüllt
             }
             
-            if (!this.validateInput(input)) {
-                return null; // Ungültige Eingabe
-            }
-            
+            // NO validation - just parse the value
             const numValue = parseFloat(value.replace(',', '.'));
             scores.push(numValue);
         }
@@ -1623,6 +1677,47 @@ class PoetrySlamCalculator {
             }
         } catch (error) {
             this.handleError('PWA viewport setup failed', error);
+        }
+    }
+
+    /**
+     * Setup development timestamp display
+     * Shows last updated time in development mode only
+     */
+    setupDevTimestamp() {
+        try {
+            // Check if running in development mode (localhost or dev server)
+            const isDev = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('192.168.') ||
+                         window.location.port === '3000';
+            
+            if (isDev) {
+                const devTimestamp = document.getElementById('devTimestamp');
+                const lastUpdated = document.getElementById('lastUpdated');
+                
+                if (devTimestamp && lastUpdated) {
+                    // Show the timestamp element
+                    devTimestamp.style.display = 'block';
+                    
+                    // Set current timestamp
+                    const now = new Date();
+                    const timestamp = now.toLocaleString('de-DE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    
+                    lastUpdated.textContent = `Letztes Update: ${timestamp}`;
+                    
+                    console.log('Development timestamp displayed');
+                }
+            }
+        } catch (error) {
+            this.handleError('Development timestamp setup failed', error);
         }
     }
 

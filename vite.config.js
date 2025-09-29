@@ -10,22 +10,24 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
     minify: 'terser',
+    cssCodeSplit: false,
     rollupOptions: {
       input: 'index.html',
       output: {
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split('.');
           const ext = info[info.length - 1];
+          const timestamp = Date.now();
           if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
-            return `assets/images/[name]-[hash][extname]`;
+            return `assets/images/[name]-${timestamp}-[hash][extname]`;
           }
           if (/woff2?|eot|ttf|otf/i.test(ext)) {
-            return `assets/fonts/[name]-[hash][extname]`;
+            return `assets/fonts/[name]-${timestamp}-[hash][extname]`;
           }
-          return `assets/[name]-[hash][extname]`;
+          return `assets/[name]-${timestamp}-[hash][extname]`;
         },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js'
+        chunkFileNames: `assets/js/[name]-${Date.now()}-[hash].js`,
+        entryFileNames: `assets/js/[name]-${Date.now()}-[hash].js`
       }
     },
     terserOptions: {
@@ -107,7 +109,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        cacheId: `poetry-slam-calculator-v1.3.1-${Date.now()}`,
+        cacheId: `poetry-slam-calculator-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         navigateFallback: process.env.NODE_ENV === 'production' ? '/slam-calculator/index.html' : '/index.html',
         navigateFallbackAllowlist: [/^(?!\/__).*/],
         runtimeCaching: [
@@ -185,7 +187,10 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
-    open: true
+    open: true,
+    sourcemapIgnoreList: (sourcePath, sourcemapPath) => {
+      return sourcePath.includes('bootstrap') || sourcePath.includes('installHook');
+    }
   },
   preview: {
     port: 4173,

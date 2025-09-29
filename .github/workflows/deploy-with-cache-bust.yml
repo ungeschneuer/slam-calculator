@@ -1,0 +1,42 @@
+name: Deploy with Aggressive Cache Busting
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build with cache busting
+      run: npm run build:pages:cache-bust
+      env:
+        NODE_ENV: production
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist
+        cname: ungeschneuer.github.io
+        
+    - name: Force cache invalidation
+      run: |
+        echo "🚀 Deployment completed with aggressive cache busting!"
+        echo "📊 Cache bust ID: $(cat dist/cache-bust.json | jq -r '.version')"
+        echo "⏰ Build timestamp: $(cat dist/cache-bust.json | jq -r '.timestamp')"
