@@ -6,17 +6,16 @@
 
   "scripts": {
     "dev": "vite",
-    "dev:gold": "vite && node scripts/version-manager.js && node scripts/cache-bust.js --dev",
+    "dev:cache-bust": "vite && node scripts/cache-bust.js --dev",
     "build": "vite build",
-    "build:gold": "vite build && node scripts/version-manager.js && node scripts/cache-bust.js",
+    "build:cache-bust": "vite build && node scripts/cache-bust.js",
     "preview": "vite preview",
-    "preview:gold": "vite preview && node scripts/version-manager.js && node scripts/cache-bust.js --preview",
-    "preview:fresh": "npm run clean && npm run build:gold && vite preview",
+    "preview:cache-bust": "vite preview && node scripts/cache-bust.js --preview",
+    "preview:fresh": "npm run clean && npm run build:cache-bust && vite preview",
     "build:pages": "NODE_ENV=production vite build",
-    "build:pages:gold": "NODE_ENV=production vite build && node scripts/version-manager.js && node scripts/cache-bust.js",
+    "build:pages:cache-bust": "NODE_ENV=production vite build && node scripts/cache-bust.js",
     "clean": "rm -rf dist",
-    "deploy": "npm run build:pages:gold && echo 'Gold Standard PWA build completed. Push to main branch to deploy.'",
-    "version": "node scripts/version-manager.js",
+    "deploy": "npm run build:pages:cache-bust && echo 'Build completed with cache busting. Push to main branch to deploy.'",
     "cache-bust": "node scripts/cache-bust.js"
   },
   "keywords": [
