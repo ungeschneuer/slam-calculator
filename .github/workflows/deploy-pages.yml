@@ -1,9 +1,10 @@
-name: Deploy with Aggressive Cache Busting
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -30,22 +31,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Build with cache busting
-        run: npm run build:pages:cache-bust
-        env:
-          NODE_ENV: production
-          
+      - name: Build
+        run: npm run build
+        
       - name: Test build output
         run: |
           if [ ! -f "dist/index.html" ]; then
             echo "Build failed: index.html not found"
             exit 1
           fi
-          if [ ! -f "dist/cache-bust.json" ]; then
-            echo "Build failed: cache-bust.json not found"
-            exit 1
-          fi
-          echo "Build successful with cache busting"
+          echo "Build successful"
 
   deploy:
     environment:
@@ -67,11 +62,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Build with cache busting
-        run: npm run build:pages:cache-bust
-        env:
-          NODE_ENV: production
-          
+      - name: Build
+        run: npm run build
+        
       - name: Setup Pages
         uses: actions/configure-pages@v4
         
@@ -83,9 +76,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        
-      - name: Force cache invalidation
-        run: |
-          echo "🚀 Deployment completed with aggressive cache busting!"
-          echo "📊 Cache bust ID: $(cat dist/cache-bust.json | jq -r '.version')"
-          echo "⏰ Build timestamp: $(cat dist/cache-bust.json | jq -r '.timestamp')"

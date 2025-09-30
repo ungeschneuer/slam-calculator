@@ -144,9 +144,11 @@ input[type="number"]::-webkit-inner-spin-button {
     
     .container-fluid {
         min-height: 100vh;
+        min-height: -webkit-fill-available; /* Prevent layout shift on iOS */
         overflow-y: auto;
         overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
+        contain: layout; /* Optimize layout calculations */
     }
     
                 /* PWA Notch Abstand für iPhone */
@@ -167,6 +169,8 @@ input[type="number"]::-webkit-inner-spin-button {
     .judge-input {
         font-size: 16px; /* Verhindert Zoom auf iOS */
         padding: 0.5rem 0.75rem;
+        transform: translateZ(0); /* Hardware acceleration */
+        will-change: transform; /* Optimize for animations */
     }
     
     .form-control:focus {
@@ -1291,17 +1295,4 @@ kbd {
     footer .btn-link {
         font-size: 0.9rem;
     }
-}
-
-/* Standard numeric input styling */
-.judge-input {
-    font-size: 16px; /* Prevents zoom on mobile */
-    -webkit-appearance: none;
-    -moz-appearance: textfield;
-}
-
-.judge-input::-webkit-outer-spin-button,
-.judge-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
 }

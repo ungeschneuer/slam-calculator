@@ -39,7 +39,7 @@ class PoetrySlamCalculator {
         /** @type {number|null} Timeout ID for auto-save */
         this.autoSaveTimeout = null;
         /** @type {number} Delay before auto-save triggers (in ms) */
-        this.autoSaveDelay = 1000;
+        this.autoSaveDelay = 2000; // Increased delay to reduce processing
         
         // Error handling
         /** @type {number} Current error count */
@@ -62,6 +62,10 @@ class PoetrySlamCalculator {
         this.timerPaused = false;
         /** @type {number} Timestamp when timer was paused */
         this.timerPauseTime = 0;
+        
+        // Performance optimization
+        /** @type {number} Last recorded screen width for resize optimization */
+        this.lastScreenWidth = window.innerWidth;
         
         this.init();
     }
@@ -92,9 +96,6 @@ class PoetrySlamCalculator {
             // Setup PWA features
             this.registerServiceWorker();
             this.setupPWAViewport();
-            
-            // Setup development timestamp
-            this.setupDevTimestamp();
         } catch (error) {
             this.handleError('Initialisierung fehlgeschlagen', error);
         }
@@ -144,30 +145,37 @@ class PoetrySlamCalculator {
      * Handles real-time validation and automatic saving
      */
     setupInputListeners() {
+        // Debounced input handler to prevent excessive processing
+        let inputTimeout;
         document.addEventListener('input', (e) => {
             try {
+                // Clear existing timeout
+                clearTimeout(inputTimeout);
+                
                 if (e.target.classList.contains('judge-input')) {
-                    // Sofortige Eingabe-Normalisierung für Android
-                    this.normalizeInput(e.target);
-                    // Step 3: Add limitDecimalPlaces to input event
-                    this.limitDecimalPlaces(e.target);
-                    // Step 2: Add validation on input (but not limitDecimalPlaces)
+                    // Only validate input, don't modify it during typing
                     this.validateInput(e.target);
-                    this.triggerAutoSave(e.target);
+                    
+                    // Debounce auto-save to prevent excessive processing
+                    inputTimeout = setTimeout(() => {
+                        this.triggerAutoSave(e.target);
+                    }, 500); // Increased debounce time
                 } else if (e.target.id === 'participantName') {
-                    this.triggerAutoSave(e.target);
+                    // Debounce auto-save for participant name too
+                    inputTimeout = setTimeout(() => {
+                        this.triggerAutoSave(e.target);
+                    }, 500);
                 }
             } catch (error) {
                 this.handleError('Input Event Handler Fehler', error);
             }
         });
-
-        // Step 1: Add validation only on blur (when user leaves the field)
+        
+        // Handle decimal separator processing on blur (when user finishes typing)
         document.addEventListener('blur', (e) => {
             try {
                 if (e.target.classList.contains('judge-input')) {
                     this.limitDecimalPlaces(e.target);
-                    this.validateInput(e.target);
                 }
             } catch (error) {
                 this.handleError('Blur Event Handler Fehler', error);
@@ -365,29 +373,17 @@ class PoetrySlamCalculator {
     // Force cache refresh for PWA updates
     async forceCacheRefresh() {
         try {
-            if ('serviceWorker' in navigator) {
-                // Clear all caches first
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                // Send message to service worker to skip waiting
+                navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                
+                // Clear all caches
                 const cacheNames = await caches.keys();
                 await Promise.all(
                     cacheNames.map(cacheName => caches.delete(cacheName))
                 );
                 
-                // Force service worker update
-                const registration = await navigator.serviceWorker.getRegistration();
-                if (registration) {
-                    await registration.update();
-                    // Force skip waiting
-                    if (registration.waiting) {
-                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    }
-                }
-                
-                // Clear localStorage cache markers
-                localStorage.removeItem('app-version');
-                localStorage.removeItem('poetry-slam-cache-version');
-                
                 // Cache refresh completed successfully
-                console.log('Cache cleared successfully');
             }
         } catch (error) {
             console.warn('Cache refresh failed:', error);
@@ -599,7 +595,44 @@ class PoetrySlamCalculator {
         const scores = {};
         document.querySelectorAll('.judge-input').forEach(input => {
             if (input.value.trim()) {
-                scores[input.id] = input.value;
+                let value = input.value.trim();
+                
+                // Count decimal separators
+                const commaCount = (value.match(/,/g) || []).length;
+                const dotCount = (value.match(/\./g) || []).length;
+                
+                // Only allow one decimal separator
+                if (commaCount > 1 || dotCount > 1) {
+                    // If multiple separators of same type, keep only the first one
+                    if (commaCount > 1) {
+                        const firstComma = value.indexOf(',');
+                        value = value.substring(0, firstComma + 1) + value.substring(firstComma + 1).replace(/,/g, '');
+                    }
+                    if (dotCount > 1) {
+                        const firstDot = value.indexOf('.');
+                        value = value.substring(0, firstDot + 1) + value.substring(firstDot + 1).replace(/\./g, '');
+                    }
+                }
+                
+                // If both comma and dot are present, remove the first one and keep the last one
+                if (commaCount > 0 && dotCount > 0) {
+                    const lastComma = value.lastIndexOf(',');
+                    const lastDot = value.lastIndexOf('.');
+                    
+                    if (lastComma > lastDot) {
+                        // Keep comma, remove all dots
+                        value = value.replace(/\./g, '');
+                        value = value.replace(',', '.');
+                    } else {
+                        // Keep dot, remove all commas
+                        value = value.replace(/,/g, '');
+                    }
+                } else if (commaCount > 0) {
+                    // Only comma present, convert to dot
+                    value = value.replace(',', '.');
+                }
+                
+                scores[input.id] = value;
             }
         });
         return scores;
@@ -607,51 +640,77 @@ class PoetrySlamCalculator {
 
     generateJudgeInputs() {
         const container = document.getElementById('judgeInputs');
-        container.innerHTML = '';
-
-        // Bestimme die Anzahl Spalten basierend auf Bildschirmgröße
-        const isMobile = window.innerWidth <= 768;
-        const isSmallMobile = window.innerWidth <= 576;
         
-        let colClass = 'col-md-6 col-lg-4';
-        if (isSmallMobile) {
-            colClass = 'col-6';
-        } else if (isMobile) {
-            colClass = 'col-md-6';
-        }
+        // Store current values before clearing
+        const currentValues = {};
+        document.querySelectorAll('.judge-input').forEach(input => {
+            if (input.value) {
+                currentValues[input.id] = input.value;
+            }
+        });
+        
+        // Use requestAnimationFrame for smoother DOM updates
+        requestAnimationFrame(() => {
+            container.innerHTML = '';
 
-        for (let i = 0; i < this.currentJudgeCount; i++) {
-            const col = document.createElement('div');
-            col.className = colClass;
+            // Bestimme die Anzahl Spalten basierend auf Bildschirmgröße
+            const isMobile = window.innerWidth <= 768;
+            const isSmallMobile = window.innerWidth <= 576;
             
-            col.innerHTML = `
-                <div class="form-group">
-                    <label for="judge${i + 1}" class="form-label small mb-1">Juror*in ${i + 1}</label>
-                    <div class="input-group input-group-sm">
-                        <input type="text" 
-                               class="form-control form-control-sm judge-input" 
-                               id="judge${i + 1}" 
-                               placeholder="1,0-10,0 (oder 1.0-10.0)"
-                               data-judge-id="${i + 1}"
-                               inputmode="decimal"
-                               pattern="[0-9]*[.,]?[0-9]*"
-                               autocomplete="off"
-                               autocorrect="off"
-                               autocapitalize="off"
-                               spellcheck="false"
-                               ${i > 0 ? `data-previous="judge${i}"` : ''}
-                               ${i < this.currentJudgeCount - 1 ? `data-next="judge${i + 2}"` : ''}>
-                        <span class="input-group-text input-group-text-sm">Pkt</span>
+            let colClass = 'col-md-6 col-lg-4';
+            if (isSmallMobile) {
+                colClass = 'col-6';
+            } else if (isMobile) {
+                colClass = 'col-md-6';
+            }
+
+            // Create document fragment for better performance
+            const fragment = document.createDocumentFragment();
+
+            for (let i = 0; i < this.currentJudgeCount; i++) {
+                const col = document.createElement('div');
+                col.className = colClass;
+                
+                col.innerHTML = `
+                    <div class="form-group">
+                        <label for="judge${i + 1}" class="form-label small mb-1">Juror*in ${i + 1}</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" 
+                                   class="form-control form-control-sm judge-input" 
+                                   id="judge${i + 1}" 
+                                   placeholder="1,0-10,0"
+                                   data-judge-id="${i + 1}"
+                                   step="0.1"
+                                   min="1.0"
+                                   max="10.0"
+                                   inputmode="decimal"
+                                   pattern="[0-9]*[.,]?[0-9]+"
+                                   ${i > 0 ? `data-previous="judge${i}"` : ''}
+                                   ${i < this.currentJudgeCount - 1 ? `data-next="judge${i + 2}"` : ''}>
+                            <span class="input-group-text input-group-text-sm">Pkt</span>
+                        </div>
+                        <div class="invalid-feedback small" id="feedback${i + 1}"></div>
                     </div>
-                    <div class="invalid-feedback small" id="feedback${i + 1}"></div>
-                </div>
-            `;
+                `;
+                
+                fragment.appendChild(col);
+            }
             
-            container.appendChild(col);
-        }
+            // Append all at once to minimize reflows
+            container.appendChild(fragment);
+            
+            // Restore values after DOM is updated
+            Object.keys(currentValues).forEach(judgeId => {
+                const input = document.getElementById(judgeId);
+                if (input) {
+                    input.value = currentValues[judgeId];
+                    this.validateInput(input);
+                }
+            });
 
-        // Restore auto-saved data if available
-        this.restoreAutoSaveData();
+            // Restore auto-saved data if available
+            this.restoreAutoSaveData();
+        });
     }
 
     restoreAutoSaveData() {
@@ -687,7 +746,6 @@ class PoetrySlamCalculator {
         }
     }
 
-
     addJudge() {
         if (this.currentJudgeCount < this.maxJudges) {
             this.currentJudgeCount++;
@@ -712,61 +770,75 @@ class PoetrySlamCalculator {
         document.getElementById('judgeCount').textContent = this.currentJudgeCount;
     }
 
-    /**
-     * Normalize input for Android compatibility
-     * Handles both comma and dot as decimal separators
-     */
-    normalizeInput(input) {
-        // Erlaube nur Zahlen, Komma und Punkt
-        const cleanValue = input.value.replace(/[^0-9,.]/g, '');
-        if (cleanValue !== input.value) {
-            input.value = cleanValue;
-        }
+    limitDecimalPlaces(input) {
+        let value = input.value;
         
-        // Verhindere mehr als ein Dezimaltrennzeichen
-        const commaCount = (input.value.match(/,/g) || []).length;
-        const dotCount = (input.value.match(/\./g) || []).length;
+        // Count decimal separators
+        const commaCount = (value.match(/,/g) || []).length;
+        const dotCount = (value.match(/\./g) || []).length;
         
-        if (commaCount + dotCount > 1) {
-            // Behalte nur das erste Dezimaltrennzeichen
-            const firstComma = input.value.indexOf(',');
-            const firstDot = input.value.indexOf('.');
+        // Only process if there are issues with separators
+        if (commaCount > 1 || dotCount > 1 || (commaCount > 0 && dotCount > 0)) {
+            // If multiple separators of same type, keep only the first one
+            if (commaCount > 1) {
+                const firstComma = value.indexOf(',');
+                value = value.substring(0, firstComma + 1) + value.substring(firstComma + 1).replace(/,/g, '');
+            }
+            if (dotCount > 1) {
+                const firstDot = value.indexOf('.');
+                value = value.substring(0, firstDot + 1) + value.substring(firstDot + 1).replace(/\./g, '');
+            }
             
-            if (firstComma !== -1 && firstDot !== -1) {
-                if (firstComma < firstDot) {
-                    input.value = input.value.replace(/\./g, '');
+            // If both comma and dot are present, keep the last one
+            if (commaCount > 0 && dotCount > 0) {
+                const lastComma = value.lastIndexOf(',');
+                const lastDot = value.lastIndexOf('.');
+                
+                if (lastComma > lastDot) {
+                    // Keep comma, remove all dots
+                    value = value.replace(/\./g, '');
+                    value = value.replace(',', '.');
                 } else {
-                    input.value = input.value.replace(/,/g, '');
+                    // Keep dot, remove all commas
+                    value = value.replace(/,/g, '');
                 }
             }
         }
-    }
-
-    limitDecimalPlaces(input) {
-        // Normalisiere für die Verarbeitung
-        const normalizedValue = input.value.replace(',', '.');
         
-        // Begrenze auf eine Nachkommastelle
-        if (normalizedValue.includes('.')) {
-            const parts = normalizedValue.split('.');
+        // Convert comma to dot for consistency
+        if (value.includes(',')) {
+            value = value.replace(',', '.');
+        }
+        
+        // Limit to one decimal place
+        if (value.includes('.')) {
+            const parts = value.split('.');
             if (parts[1].length > 1) {
-                // Behalte das ursprüngliche Dezimaltrennzeichen (Komma oder Punkt)
-                const originalDecimal = input.value.includes(',') ? ',' : '.';
-                input.value = parts[0] + originalDecimal + parts[1].substring(0, 1);
+                value = parts[0] + '.' + parts[1].substring(0, 1);
             }
         }
         
-        // Zusätzlich: Erlaube nur Zahlen, Komma und Punkt
-        const cleanValue = input.value.replace(/[^0-9,.]/g, '');
-        if (cleanValue !== input.value) {
-            input.value = cleanValue;
+        // Only update if value actually changed
+        if (value !== input.value) {
+            input.value = value;
         }
     }
 
     validateInput(input) {
-        // Normalisiere Komma zu Punkt für die Validierung
-        const value = input.value.replace(',', '.');
-        const numValue = parseFloat(value);
+        let value = input.value;
+        
+        // For validation, we need to normalize the value to check if it's valid
+        // but we don't want to modify the input during typing
+        let normalizedValue = value;
+        
+        // Count decimal separators
+        const commaCount = (value.match(/,/g) || []).length;
+        const dotCount = (value.match(/\./g) || []).length;
+        
+        // Normalize for validation (convert comma to dot for parsing)
+        if (commaCount > 0) {
+            normalizedValue = value.replace(',', '.');
+        }
         
         input.classList.remove('is-valid', 'is-invalid');
         
@@ -774,8 +846,8 @@ class PoetrySlamCalculator {
             return false;
         }
         
-        // Prüfe auf mehr als eine Nachkommastelle (nach Normalisierung)
-        if (value.includes('.') && value.split('.')[1].length > 1) {
+        // Check for multiple decimal places in normalized value
+        if (normalizedValue.includes('.') && normalizedValue.split('.')[1].length > 1) {
             input.classList.add('is-invalid');
             const feedback = document.getElementById(`feedback${input.dataset.judgeId}`);
             if (feedback) {
@@ -784,11 +856,23 @@ class PoetrySlamCalculator {
             return false;
         }
         
+        // Check for multiple separators
+        if (commaCount > 1 || dotCount > 1 || (commaCount > 0 && dotCount > 0)) {
+            input.classList.add('is-invalid');
+            const feedback = document.getElementById(`feedback${input.dataset.judgeId}`);
+            if (feedback) {
+                feedback.textContent = 'Nur ein Dezimaltrennzeichen erlaubt';
+            }
+            return false;
+        }
+        
+        const numValue = parseFloat(normalizedValue);
+        
         if (isNaN(numValue) || numValue < 1.0 || numValue > 10.0) {
             input.classList.add('is-invalid');
             const feedback = document.getElementById(`feedback${input.dataset.judgeId}`);
             if (feedback) {
-                feedback.textContent = '1,0 - 10,0 (Komma oder Punkt)';
+                feedback.textContent = '1,0 - 10,0';
             }
             return false;
         }
@@ -837,13 +921,51 @@ class PoetrySlamCalculator {
         const inputs = document.querySelectorAll('.judge-input');
         
         for (let input of inputs) {
-            const value = input.value.trim();
+            let value = input.value.trim();
             if (value === '') {
                 return null; // Nicht alle Felder ausgefüllt
             }
             
-            // NO validation - just parse the value
-            const numValue = parseFloat(value.replace(',', '.'));
+            if (!this.validateInput(input)) {
+                return null; // Ungültige Eingabe
+            }
+            
+            // Count decimal separators
+            const commaCount = (value.match(/,/g) || []).length;
+            const dotCount = (value.match(/\./g) || []).length;
+            
+            // Only allow one decimal separator
+            if (commaCount > 1 || dotCount > 1) {
+                // If multiple separators of same type, keep only the first one
+                if (commaCount > 1) {
+                    const firstComma = value.indexOf(',');
+                    value = value.substring(0, firstComma + 1) + value.substring(firstComma + 1).replace(/,/g, '');
+                }
+                if (dotCount > 1) {
+                    const firstDot = value.indexOf('.');
+                    value = value.substring(0, firstDot + 1) + value.substring(firstDot + 1).replace(/\./g, '');
+                }
+            }
+            
+            // If both comma and dot are present, remove the first one and keep the last one
+            if (commaCount > 0 && dotCount > 0) {
+                const lastComma = value.lastIndexOf(',');
+                const lastDot = value.lastIndexOf('.');
+                
+                if (lastComma > lastDot) {
+                    // Keep comma, remove all dots
+                    value = value.replace(/\./g, '');
+                    value = value.replace(',', '.');
+                } else {
+                    // Keep dot, remove all commas
+                    value = value.replace(/,/g, '');
+                }
+            } else if (commaCount > 0) {
+                // Only comma present, convert to dot
+                value = value.replace(',', '.');
+            }
+            
+            const numValue = parseFloat(value);
             scores.push(numValue);
         }
         
@@ -1692,39 +1814,6 @@ class PoetrySlamCalculator {
         }
     }
 
-    /**
-     * Setup build timestamp display
-     * Shows last updated time for both development and production builds
-     */
-    setupDevTimestamp() {
-        try {
-            const devTimestamp = document.getElementById('devTimestamp');
-            const lastUpdated = document.getElementById('lastUpdated');
-            
-            if (devTimestamp && lastUpdated) {
-                // Show the timestamp element for both development and production
-                devTimestamp.style.display = 'block';
-                
-                // Set current timestamp
-                const now = new Date();
-                const timestamp = now.toLocaleString('de-DE', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                
-                lastUpdated.textContent = `Letztes Update: ${timestamp}`;
-                
-                console.log('Build timestamp displayed');
-            }
-        } catch (error) {
-            this.handleError('Build timestamp setup failed', error);
-        }
-    }
-
     // PWA Service Worker Registration
     registerServiceWorker() {
         if ('serviceWorker' in navigator) {
@@ -1748,13 +1837,26 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         calculator = new PoetrySlamCalculator();
         
-        // Event Listener für Resize-Events
+        // Event Listener für Resize-Events (optimized)
+        let resizeTimeout;
         window.addEventListener('resize', () => {
             try {
-                // Regeneriere Inputs bei Größenänderung für bessere mobile Anpassung
-                setTimeout(() => {
-                    calculator.generateJudgeInputs();
-                }, 100);
+                // Debounce resize events to prevent excessive regenerations
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    // Only regenerate if screen size category actually changed
+                    const currentWidth = window.innerWidth;
+                    const wasMobile = calculator.lastScreenWidth <= 768;
+                    const isMobile = currentWidth <= 768;
+                    const wasSmallMobile = calculator.lastScreenWidth <= 576;
+                    const isSmallMobile = currentWidth <= 576;
+                    
+                    // Only regenerate if mobile/desktop category changed
+                    if (wasMobile !== isMobile || wasSmallMobile !== isSmallMobile) {
+                        calculator.lastScreenWidth = currentWidth;
+                        calculator.generateJudgeInputs();
+                    }
+                }, 300); // Increased debounce time
             } catch (error) {
                 calculator?.handleError('Resize Event Fehler', error);
             }
