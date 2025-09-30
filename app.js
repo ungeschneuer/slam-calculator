@@ -675,14 +675,11 @@ class PoetrySlamCalculator {
                     <div class="form-group">
                         <label for="judge${i + 1}" class="form-label small mb-1">Juror*in ${i + 1}</label>
                         <div class="input-group input-group-sm">
-                            <input type="number" 
+                            <input type="text" 
                                    class="form-control form-control-sm judge-input" 
                                    id="judge${i + 1}" 
                                    placeholder="1,0-10,0"
                                    data-judge-id="${i + 1}"
-                                   step="0.1"
-                                   min="1.0"
-                                   max="10.0"
                                    inputmode="decimal"
                                    pattern="[0-9]*[.,]?[0-9]+"
                                    ${i > 0 ? `data-previous="judge${i}"` : ''}
